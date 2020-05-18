@@ -1,0 +1,5 @@
+set(StructurePreservingColorNormalization_SRCS
+  itkMinimalStandardRandomVariateGenerator.cxx
+  )
+
+itk_module_add_library(StructurePreservingColorNormalization ${StructurePreservingColorNormalization_SRCS})
