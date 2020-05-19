@@ -24,74 +24,107 @@
 
 namespace
 {
+
 class ShowProgress : public itk::Command
 {
 public:
-  itkNewMacro(ShowProgress);
+  itkNewMacro( ShowProgress );
 
   void
-  Execute(itk::Object * caller, const itk::EventObject & event) override
+  Execute( itk::Object * caller, const itk::EventObject & event ) override
   {
-    Execute((const itk::Object *)caller, event);
+    Execute( ( const itk::Object * )caller, event );
   }
 
   void
-  Execute(const itk::Object * caller, const itk::EventObject & event) override
+  Execute( const itk::Object * caller, const itk::EventObject & event ) override
   {
-    if (!itk::ProgressEvent().CheckEvent(&event))
+    if( !itk::ProgressEvent().CheckEvent( &event ) )
     {
       return;
     }
-    const auto * processObject = dynamic_cast<const itk::ProcessObject *>(caller);
-    if (!processObject)
+    const auto * processObject = dynamic_cast< const itk::ProcessObject *>( caller );
+    if( !processObject )
     {
       return;
     }
     std::cout << " " << processObject->GetProgress();
   }
 };
+
 } // namespace
 
-int itkStructurePreservingColorNormalizationFilterTest(int argc, char * argv[])
+int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] )
 {
-  if (argc < 2)
+  if( argc < 2 )
   {
     std::cerr << "Missing parameters." << std::endl;
-    std::cerr << "Usage: " << itkNameOfTestExecutableMacro(argv);
+    std::cerr << "Usage: " << itkNameOfTestExecutableMacro( argv );
     std::cerr << " outputImage";
     std::cerr << std::endl;
     return EXIT_FAILURE;
   }
-  const char * outputImageFileName = argv[1];
+  const char * const outputImageFileName = argv[1];
 
   constexpr unsigned int Dimension = 2;
-  using PixelType = float;
-  using ImageType = itk::Image<PixelType, Dimension>;
+  using PixelType = typename itk::RGBPixel< unsigned char >;
+  using ImageType = typename itk::Image< PixelType, Dimension >;
 
-  using FilterType = itk::StructurePreservingColorNormalizationFilter<ImageType, ImageType>;
+  using FilterType = itk::StructurePreservingColorNormalizationFilter< ImageType, ImageType >;
   FilterType::Pointer filter = FilterType::New();
 
-  EXERCISE_BASIC_OBJECT_METHODS(filter, StructurePreservingColorNormalizationFilter, ImageToImageFilter);
+  EXERCISE_BASIC_OBJECT_METHODS( filter, StructurePreservingColorNormalizationFilter, ImageToImageFilter );
 
   // Create input image to avoid test dependencies.
   ImageType::SizeType size;
-  size.Fill(128);
+  size.Fill( 128 );
   ImageType::Pointer image = ImageType::New();
-  image->SetRegions(size);
+  image->SetRegions( size );
   image->Allocate();
-  image->FillBuffer(1.1f);
+  PixelType white;
+  white.SetRed( 255 );
+  white.SetGreen( 255 );
+  white.SetBlue( 255 );
+  PixelType hematoxylin;        // dominant effect is to suppress red
+  hematoxylin.SetRed( 16 );
+  hematoxylin.SetGreen( 67 );
+  hematoxylin.SetBlue( 118 );
+  PixelType eosin;              // dominant effect is to suppress green
+  eosin.SetRed( 199 );
+  eosin.SetGreen( 21 );
+  eosin.SetBlue( 133 );
+
+  image->FillBuffer( white );
+
+  ImageType::IndexValueType coordinates[] { 0, 0 };
+  ImageType::IndexType index;
+  for( ImageType::IndexValueType i = ImageType::IndexValueType( 0 ); i < ImageType::IndexValueType( 128 ); ++i )
+    {
+    coordinates[1] = i;
+    coordinates[0] = 0;
+    index.SetIndex( coordinates );
+    image->SetPixel( index, hematoxylin );
+    coordinates[0] = 1;
+    index.SetIndex( coordinates );
+    image->SetPixel( index, eosin );
+    coordinates[0] = 2;
+    index.SetIndex( coordinates );
+    image->SetPixel( index, ( hematoxylin + eosin ) / 2 - white / 100 );
+    }
 
   ShowProgress::Pointer showProgress = ShowProgress::New();
-  filter->AddObserver(itk::ProgressEvent(), showProgress);
-  filter->SetInput(image);
+  filter->AddObserver( itk::ProgressEvent(), showProgress );
+  filter->SetInput( 0, image );   // image to be normalized using ...
+  filter->SetInput( 1, image );   // reference image
+  filter->GetOutput()->SetRequestedRegion( filter->GetInput( 0 )->GetRequestedRegion().GetSize() );
 
-  using WriterType = itk::ImageFileWriter<ImageType>;
+  using WriterType = itk::ImageFileWriter< ImageType >;
   WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName(outputImageFileName);
-  writer->SetInput(filter->GetOutput());
-  writer->SetUseCompression(true);
+  writer->SetFileName( outputImageFileName );
+  writer->SetInput( filter->GetOutput() );
+  writer->SetUseCompression( true );
 
-  TRY_EXPECT_NO_EXCEPTION(writer->Update());
+  TRY_EXPECT_NO_EXCEPTION( writer->Update() );
 
 
   std::cout << "Test finished." << std::endl;
