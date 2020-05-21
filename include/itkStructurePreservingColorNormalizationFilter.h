@@ -1,6 +1,6 @@
 /*=========================================================================
  *
- *  Copyright NumFOCUS
+ *  Copyright NumFOCUS!!!
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ public:
   using OutputPixelType = typename OutputImageType::PixelType;
 
   using CalcElementType = double;
-  using CalcMatrixType = vnl_matrix< CalcElementType >;
+  using CalcMatrixType = vnl_matrix< CalcElementType >; // Use Eigen instead of VNL?!!!
   using CalcVectorType = vnl_vector< CalcElementType >;
   using CalcDiagMatrixType = vnl_diag_matrix< CalcElementType >;
 
@@ -101,9 +101,11 @@ protected:
 
   void PrintSelf( std::ostream & os, Indent indent ) const override;
 
-  void DynamicThreadedGenerateData( const OutputRegionType & outputRegion ) override;
-
   void GenerateInputRequestedRegion() override;
+
+  void BeforeThreadedGenerateData() override;
+
+  void DynamicThreadedGenerateData( const OutputRegionType & outputRegion ) override;
 
   void ImageToNMF( InputRegionConstIterator &iter, CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH, InputPixelType &pixelUnstained ) const;
 
@@ -111,11 +113,29 @@ protected:
 
   void MatrixToDistinguishers( const CalcMatrixType &matrixV, CalcMatrixType &distinguishers ) const;
 
-  int MatrixToOneDistinguisher( const CalcMatrixType &kernel, const CalcVectorType &shortOnes, const CalcMatrixType &normV ) const;
+  CalcMatrixType MatrixToBrightPartOfMatrix( const CalcMatrixType &matrixV ) const;
 
-  CalcMatrixType RecenterMatrix( const CalcVectorType &longOnes, const CalcMatrixType &normV, const int row ) const;
+  void FirstPassDistinguishers( const CalcMatrixType &, std::array< int, NumberOfStains+1 > &, unsigned int & ) const;
 
-  CalcMatrixType ProjectMatrix( const CalcMatrixType &kernel, const CalcMatrixType &normV, const int row ) const;
+  void SecondPassDistinguishers( const CalcMatrixType &, const std::array< int, NumberOfStains+1 > &, const int, const CalcMatrixType &, CalcMatrixType & ) const;
+
+  int MatrixToOneDistinguisher( const CalcVectorType &shortOnes, const CalcMatrixType &normV ) const;
+
+  CalcMatrixType RecenterMatrix( const CalcMatrixType &normV, const CalcVectorType &longOnes, const int row ) const;
+
+  CalcMatrixType ProjectMatrix( const CalcMatrixType &normV, const int row ) const;
+
+  void MatrixToDistinguishersOld( const CalcMatrixType &matrixV, CalcMatrixType &distinguishers ) const;
+
+  void FirstPassDistinguishersOld( const CalcMatrixType &, const CalcMatrixType &, std::array< int, NumberOfStains+1 > &, unsigned int & ) const;
+
+  void SecondPassDistinguishersOld( const CalcMatrixType &, const CalcMatrixType &, const std::array< int, NumberOfStains+1 > &, const int, const CalcMatrixType &, CalcMatrixType & ) const;
+
+  int MatrixToOneDistinguisherOld( const CalcMatrixType &kernel, const CalcVectorType &shortOnes, const CalcMatrixType &normV ) const;
+
+  CalcMatrixType RecenterMatrixOld( const CalcMatrixType &normV, const CalcVectorType &longOnes, const int row ) const;
+
+  CalcMatrixType ProjectMatrixOld( const CalcMatrixType &kernel, const CalcMatrixType &normV, const int row ) const;
 
   void DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, const CalcVectorType &longOnes, InputPixelType &pixelUnstained, CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const;
 
@@ -123,7 +143,7 @@ protected:
 
   // void NMFSeedsToNMFSolution( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const;
 
-  void VirtanenEuclid( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const;
+  void VirtanenEuclidean( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const;
 
   void VirtanenKLDivergence( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const;
 
@@ -132,8 +152,18 @@ protected:
 private:
   static constexpr CalcElementType epsilon {1e-6};   // a very small matrix element
   static constexpr CalcElementType epsilon2 {epsilon * epsilon}; // a very small squared magnitude for a vector.
-  static constexpr unsigned int    numberOfIterations {300u}; // For search for non-negative matrix factorization.
+  static constexpr unsigned int    maxNumberOfIterations {10000u}; // For Virtanen's non-negative matrix factorization algorithm.
   static constexpr CalcElementType lambda {0.02}; // For Lasso penalty.
+
+  const InputImageType *m_inputPtr;
+  TimeStamp m_inputTimeStamp;
+  CalcMatrixType m_inputW;
+  CalcMatrixType m_inputH;
+  const InputImageType *m_referPtr;
+  TimeStamp m_referTimeStamp;
+  CalcMatrixType m_referH;
+  InputPixelType m_referUnstainedPixel;
+
 
 #ifdef ITK_USE_CONCEPT_CHECKING
   // Add concept checking such as

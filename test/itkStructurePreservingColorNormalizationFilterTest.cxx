@@ -1,6 +1,6 @@
 /*=========================================================================
  *
- *  Copyright NumFOCUS
+ *  Copyright NumFOCUS!!!
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@
 #include "itkCommand.h"
 #include "itkImageFileWriter.h"
 #include "itkTestingMacros.h"
+#include "itkMersenneTwisterRandomVariateGenerator.h"
+#include "itkNormalVariateGenerator.h"
 
 namespace
 {
@@ -56,6 +58,10 @@ public:
 
 int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] )
 {
+// Install correct output (to be compared to during test) to
+// ~/git/ITKStructurePreservingColorNormalization-build/ExternalData/test/Baseline/itkStructurePreservingColorNormalizationFilterTestOutput.mha
+// or similar location!!!
+
   if( argc < 2 )
   {
     std::cerr << "Missing parameters." << std::endl;
@@ -68,6 +74,7 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
 
   constexpr unsigned int Dimension = 2;
   using PixelType = typename itk::RGBPixel< unsigned char >;
+  static constexpr unsigned int InputImageLength = PixelType::Length;
   using ImageType = typename itk::Image< PixelType, Dimension >;
 
   using FilterType = itk::StructurePreservingColorNormalizationFilter< ImageType, ImageType >;
@@ -75,16 +82,27 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
 
   EXERCISE_BASIC_OBJECT_METHODS( filter, StructurePreservingColorNormalizationFilter, ImageToImageFilter );
 
-  // Create input image to avoid test dependencies.
+  // Create input images to avoid test dependencies.
+  const ImageType::SizeValueType testSize = 16;
   ImageType::SizeType size;
-  size.Fill( 128 );
-  ImageType::Pointer image = ImageType::New();
-  image->SetRegions( size );
-  image->Allocate();
-  PixelType white;
-  white.SetRed( 255 );
-  white.SetGreen( 255 );
-  white.SetBlue( 255 );
+  size.Fill( testSize );
+  ImageType::Pointer input = ImageType::New();
+  ImageType::Pointer refer = ImageType::New();
+
+  // We will need some random number generators.
+  using UniformGeneratorType = itk::Statistics::MersenneTwisterRandomVariateGenerator;
+  UniformGeneratorType::Pointer uniformGenerator = UniformGeneratorType::New();
+  uniformGenerator->Initialize( 20200519 );
+
+  using NormalGeneratorType = itk::Statistics::NormalVariateGenerator;
+  NormalGeneratorType::Pointer normalGenerator = NormalGeneratorType::New();
+  normalGenerator->Initialize( 20200520 );
+
+  // Define some useful colors
+  PixelType white;              // For unstained / background pixels
+  white.SetRed( 240 );
+  white.SetGreen( 240 );
+  white.SetBlue( 240 );
   PixelType hematoxylin;        // dominant effect is to suppress red
   hematoxylin.SetRed( 16 );
   hematoxylin.SetGreen( 67 );
@@ -94,29 +112,47 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
   eosin.SetGreen( 21 );
   eosin.SetBlue( 133 );
 
-  image->FillBuffer( white );
-
-  ImageType::IndexValueType coordinates[] { 0, 0 };
-  ImageType::IndexType index;
-  for( ImageType::IndexValueType i = ImageType::IndexValueType( 0 ); i < ImageType::IndexValueType( 128 ); ++i )
+  using CalcElementType = double;
+  using CalcVectorType = vnl_vector< CalcElementType >;
+  CalcVectorType logWhite {InputImageLength};
+  CalcVectorType logHematoxylin {InputImageLength};
+  CalcVectorType logEosin {InputImageLength};
+  for( int color {0}; color < InputImageLength; ++color )
     {
-    coordinates[1] = i;
-    coordinates[0] = 0;
-    index.SetIndex( coordinates );
-    image->SetPixel( index, hematoxylin );
-    coordinates[0] = 1;
-    index.SetIndex( coordinates );
-    image->SetPixel( index, eosin );
-    coordinates[0] = 2;
-    index.SetIndex( coordinates );
-    image->SetPixel( index, ( hematoxylin + eosin ) / 2 - white / 100 );
+    logWhite.put( color, std::log( static_cast< CalcElementType >( white[color] ) ) );
+    logHematoxylin.put( color, logWhite.get( color ) - std::log( static_cast< CalcElementType >( hematoxylin[color] ) ) );
+    logEosin.put( color, logWhite.get( color ) - std::log( static_cast< CalcElementType >( eosin[color] ) ) );
+    }
+
+  // Randomly generate both input images
+  for( ImageType::Pointer image : {input, refer} )
+    {
+    image->SetRegions( size );
+    image->Allocate();
+    image->FillBuffer( white );
+
+    using InputRegionIterator = typename itk::ImageRegionIterator< ImageType >;
+    InputRegionIterator iter {image, size};
+    PixelType tmp;
+    for( iter.GoToBegin(); !iter.IsAtEnd(); ++iter )
+      {
+      const double hematoxylinContribution {0.1 * ( 1.0 / uniformGenerator->GetVariate() - 1.0 )};
+      const double eosinContribution {0.1 * ( 1.0 / uniformGenerator->GetVariate() - 1.0 )};
+      const double noise {5.0 * normalGenerator->GetVariate()};
+      const CalcVectorType randomPixelValue {(logWhite - ( hematoxylinContribution * logHematoxylin ) - ( eosinContribution * logEosin )).apply(std::exp) + noise};
+      // std::cout << "hematoxylinContribution = " << hematoxylinContribution << ", eosinContribution = " << eosinContribution << ", randomPixelValue = " << randomPixelValue << std::endl;
+      for( int color {0}; color < InputImageLength; ++color )
+        {
+        tmp[color] = std::max( 0.0, std::min( 255.0, randomPixelValue.get( color ) ) );
+        }
+      iter.Set( tmp );
+      }
     }
 
   ShowProgress::Pointer showProgress = ShowProgress::New();
   filter->AddObserver( itk::ProgressEvent(), showProgress );
-  filter->SetInput( 0, image );   // image to be normalized using ...
-  filter->SetInput( 1, image );   // reference image
-  filter->GetOutput()->SetRequestedRegion( filter->GetInput( 0 )->GetRequestedRegion().GetSize() );
+  filter->SetInput( 0, input );   // image to be normalized using ...
+  filter->SetInput( 1, refer );   // reference image
 
   using WriterType = itk::ImageFileWriter< ImageType >;
   WriterType::Pointer writer = WriterType::New();
