@@ -115,33 +115,21 @@ protected:
 
   CalcMatrixType MatrixToBrightPartOfMatrix( const CalcMatrixType &matrixV ) const;
 
-  void FirstPassDistinguishers( const CalcMatrixType &, std::array< int, NumberOfStains+1 > &, unsigned int & ) const;
+  void FirstPassDistinguishers( const CalcMatrixType &normVStart, std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, unsigned int &numberOfDistinguishers ) const;
 
-  void SecondPassDistinguishers( const CalcMatrixType &, const std::array< int, NumberOfStains+1 > &, const int, const CalcMatrixType &, CalcMatrixType & ) const;
+  void SecondPassDistinguishers( const CalcMatrixType &normVStart, const std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, const int numberOfDistinguishers,
+    const CalcMatrixType &brightV, CalcMatrixType &secondPassDistinguisherColors ) const;
 
-  int MatrixToOneDistinguisher( const CalcVectorType &shortOnes, const CalcMatrixType &normV ) const;
+  int MatrixToOneDistinguisher( const CalcMatrixType &normV, const CalcVectorType &lastOnes ) const;
 
-  CalcMatrixType RecenterMatrix( const CalcMatrixType &normV, const CalcVectorType &longOnes, const int row ) const;
+  CalcMatrixType RecenterMatrix( const CalcMatrixType &normV, const CalcVectorType &firstOnes, const int row ) const;
 
   CalcMatrixType ProjectMatrix( const CalcMatrixType &normV, const int row ) const;
 
-  void MatrixToDistinguishersOld( const CalcMatrixType &matrixV, CalcMatrixType &distinguishers ) const;
-
-  void FirstPassDistinguishersOld( const CalcMatrixType &, const CalcMatrixType &, std::array< int, NumberOfStains+1 > &, unsigned int & ) const;
-
-  void SecondPassDistinguishersOld( const CalcMatrixType &, const CalcMatrixType &, const std::array< int, NumberOfStains+1 > &, const int, const CalcMatrixType &, CalcMatrixType & ) const;
-
-  int MatrixToOneDistinguisherOld( const CalcMatrixType &kernel, const CalcVectorType &shortOnes, const CalcMatrixType &normV ) const;
-
-  CalcMatrixType RecenterMatrixOld( const CalcMatrixType &normV, const CalcVectorType &longOnes, const int row ) const;
-
-  CalcMatrixType ProjectMatrixOld( const CalcMatrixType &kernel, const CalcMatrixType &normV, const int row ) const;
-
-  void DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, const CalcVectorType &longOnes, InputPixelType &pixelUnstained, CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const;
+  void DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, InputPixelType &pixelUnstained, CalcMatrixType &matrixV, CalcMatrixType &matrixW,
+    CalcMatrixType &matrixH ) const;
 
   void DistinguishersToColors( const CalcMatrixType &distinguishers, int &unstainedIndex, int &hematoxylinIndex, int &eosinIndex ) const;
-
-  // void NMFSeedsToNMFSolution( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const;
 
   void VirtanenEuclidean( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const;
 

@@ -46,7 +46,7 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::GenerateInputRequestedRegion()
 {
-  // {std::ostringstream mesg; mesg << "Entering GenerateInputRequestedRegion" << std::endl; std::cout << mesg.str(); }
+  // { std::ostringstream mesg; mesg << "Entering GenerateInputRequestedRegion" << std::endl; std::cout << mesg.str(); }
 
   // Call the superclass' implementation of this method
   Superclass::GenerateInputRequestedRegion();
@@ -72,7 +72,7 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::BeforeThreadedGenerateData()
 {
-  // {std::ostringstream mesg; mesg << "Entering BeforeThreadedGenerateData" << std::endl; std::cout << mesg.str(); }
+  // { std::ostringstream mesg; mesg << "Entering BeforeThreadedGenerateData" << std::endl; std::cout << mesg.str(); }
 
   // Call the superclass' implementation of this method
   Superclass::BeforeThreadedGenerateData();
@@ -115,7 +115,7 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::DynamicThreadedGenerateData( const OutputRegionType & outputRegion )
 {
-  // {std::ostringstream mesg; mesg << "Entering DynamicThreadedGenerateData" << std::endl; std::cout << mesg.str(); }
+  // { std::ostringstream mesg; mesg << "Entering DynamicThreadedGenerateData" << std::endl; std::cout << mesg.str(); }
 
   OutputImageType * const outputPtr = this->GetOutput();
   itkAssertOrThrowMacro( outputPtr != nullptr, "An output image needs to be supplied" )
@@ -156,11 +156,10 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   // Use the distinguishers as seeds to the non-negative matrix
   // factorization.  The published SPCN algorithm uses a Euclidean
   // penalty function, so we will hard code its use here.
-  this->DistinguishersToNMFSeeds( distinguishers, firstOnes, unstainedPixel, matrixV, matrixW, matrixH );
-  std::cout << "Before VirtanenEuclidean: (log) matrixH = " << matrixH << std::endl;
-  this->VirtanenEuclidean( matrixV, matrixW, matrixH );
-  // this->VirtanenKLDivergence( matrixV, matrixW, matrixH );
-  std::cout << "After VirtanenEuclidean: (log) matrixH = " << matrixH << std::endl;
+  this->DistinguishersToNMFSeeds( distinguishers, unstainedPixel, matrixV, matrixW, matrixH );
+  // { std::ostringstream mesg; mesg << "Before VirtanenEuclidean: (log) matrixH = " << matrixH << std::end; }
+  // { std::ostringstream mesg; mesg << "Before VirtanenEuclidean: (log) matrixW = " << matrixW << std::end; }
+  // this->VirtanenEuclidean( matrixV, matrixW, matrixH );
 
   // Round off values in the response, so that numbers of order 1e-16
   // are set to zero.
@@ -171,7 +170,8 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   matrixH += maxH;
   matrixH -= maxH;
 
-  // { std::ostringstream mesg; mesg << "matrixH = " << matrixH << std::endl; std::cout << mesg.str(); }
+  // { std::ostringstream mesg; mesg << "ImageToNMF: (log) matrixH = " << matrixH << std::end; }
+  // { std::ostringstream mesg; mesg << "ImageToNMF: (log) matrixW = " << matrixW << std::end; }
 }
 
 
@@ -203,7 +203,7 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::MatrixToDistinguishers( const CalcMatrixType &matrixV, CalcMatrixType &distinguishers ) const
 {
-  // {std::ostringstream mesg; mesg << "Entering MatrixToDistinguishers" << std::endl; std::cout << mesg.str(); }
+  // { std::ostringstream mesg; mesg << "Entering MatrixToDistinguishers" << std::endl; std::cout << mesg.str(); }
 
   // Keep only pixels that are bright enough.
   const CalcMatrixType brightV {this->MatrixToBrightPartOfMatrix( matrixV )};
@@ -223,7 +223,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   // Each row of secondPassDistinguisherColors is the vector of color
   // values for a distinguisher.
   CalcMatrixType secondPassDistinguisherColors {numberOfDistinguishers, brightV.cols()};
-  this->SecondPassDistinguishers(normVStart, firstPassDistinguisherIndices, numberOfDistinguishers, brightV, secondPassDistinguisherColors);
+  this->SecondPassDistinguishers( normVStart, firstPassDistinguisherIndices, numberOfDistinguishers, brightV, secondPassDistinguisherColors );
 
   distinguishers = secondPassDistinguisherColors;
 }
@@ -234,7 +234,7 @@ typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage 
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::MatrixToBrightPartOfMatrix( const CalcMatrixType &matrixV ) const
 {
-  // {std::ostringstream mesg; mesg << "Entering MatrixToBrightPartOfMatrix" << std::endl; std::cout << mesg.str(); }
+  // { std::ostringstream mesg; mesg << "Entering MatrixToBrightPartOfMatrix" << std::endl; std::cout << mesg.str(); }
 
   // A useful vector that has a 1 for each column of matrixV.
   const CalcVectorType lastOnes {matrixV.cols(), 1.0};
@@ -256,7 +256,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   unsigned int numberOfRowsToKeep {0};
   for( int i {0} ; i < matrixV.rows(); ++i )
     {
-    if( brightnessOriginal.get(i) >= brightnessThreshold )
+    if( brightnessOriginal.get( i ) >= brightnessThreshold )
       {
       ++numberOfRowsToKeep;
       }
@@ -279,7 +279,7 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::FirstPassDistinguishers( const CalcMatrixType &normVStart, std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, unsigned int &numberOfDistinguishers ) const
 {
-  // {std::ostringstream mesg; mesg << "Entering FirstPassDistinguishers" << std::endl; std::cout << mesg.str(); }
+  // { std::ostringstream mesg; mesg << "Entering FirstPassDistinguishers" << std::endl; std::cout << mesg.str(); }
 
   // A useful vector that has a 1 for each column of normVStart.
   const CalcVectorType lastOnes {normVStart.cols(), 1.0};
@@ -292,7 +292,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   while( numberOfDistinguishers <= NumberOfStains )
     {
     // Find the next distinguishing row (pixel)
-    firstPassDistinguisherIndices[numberOfDistinguishers] = this->MatrixToOneDistinguisher( lastOnes, normV );
+    firstPassDistinguisherIndices[numberOfDistinguishers] = this->MatrixToOneDistinguisher( normV, lastOnes );
     // If we found a distinguisher and we have not yet found
     // NumberOfStains+1 of them, then look for the next distinguisher.
     if( firstPassDistinguisherIndices[numberOfDistinguishers] >= 0 )
@@ -325,9 +325,10 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 template< typename TInputImage, typename TOutputImage >
 void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::SecondPassDistinguishers( const CalcMatrixType &normVStart, const std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, const int numberOfDistinguishers, const CalcMatrixType &brightV, CalcMatrixType &secondPassDistinguisherColors ) const
+::SecondPassDistinguishers( const CalcMatrixType &normVStart, const std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, const int numberOfDistinguishers,
+  const CalcMatrixType &brightV, CalcMatrixType &secondPassDistinguisherColors ) const
 {
-  // {std::ostringstream mesg; mesg << "Entering SecondPassDistinguishers" << std::endl; std::cout << mesg.str(); }
+  // { std::ostringstream mesg; mesg << "Entering SecondPassDistinguishers" << std::endl; std::cout << mesg.str(); }
 
   // A useful vector that has a 1 for each column of normVStart.
   const CalcVectorType lastOnes {normVStart.cols(), 1.0};
@@ -360,27 +361,28 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     // those that are at least 80% as far as the best.  (Note that
     // self could still be best, but not always.)
     const CalcVectorType dotProducts {normV * normV.get_row( firstPassDistinguisherIndices[distinguisher] )};
-    const CalcElementType threshold {*std::max_element( dotProducts.begin(), dotProducts.end() ) * 95 / 100};
+    const CalcElementType threshold {*std::max_element( dotProducts.begin(), dotProducts.end() ) * 999 / 1000};
     CalcVectorType cumulative {brightV.cols(), 0.0};
-    int NumberOfContributions {0};
+    int numberOfContributions {0};
     for( int row {0}; row < dotProducts.size(); ++row )
       {
       if( dotProducts[row] >= threshold )
         {
         cumulative += brightV.get_row( row );
-        ++NumberOfContributions;
+        ++numberOfContributions;
         }
       }
-    secondPassDistinguisherColors.set_row( distinguisher, cumulative / NumberOfContributions );
+    // { std::ostringstream mesg; mesg << "SecondPassDistinguishers::numberOfContributions = " << numberOfContributions << std::end; }
+    secondPassDistinguisherColors.set_row( distinguisher, cumulative / numberOfContributions );
     }
-  std::cout << "secondPassDistinguisherColors = " << secondPassDistinguisherColors << std::endl;
+  // { std::ostringstream mesg; mesg << "secondPassDistinguisherColors = " << secondPassDistinguisherColors << std::end; }
 }
 
 
 template< typename TInputImage, typename TOutputImage >
 int
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::MatrixToOneDistinguisher( const CalcVectorType &lastOnes, const CalcMatrixType &normV ) const
+::MatrixToOneDistinguisher( const CalcMatrixType &normV, const CalcVectorType &lastOnes ) const
 {
   const CalcVectorType lengths2 = element_product( normV, normV ) * lastOnes;
   const CalcElementType * const result {std::max_element( lengths2.begin(), lengths2.end() )};
@@ -418,205 +420,13 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 template< typename TInputImage, typename TOutputImage >
 void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::MatrixToDistinguishersOld( const CalcMatrixType &matrixV, CalcMatrixType &distinguishers ) const
-{
-  // { std::ostringstream mesg; mesg << "Entering MatrixToDistinguishersOld" << std::endl; std::cout << mesg.str(); }
-
-  // Keep only pixels that are bright enough.
-  const CalcMatrixType brightV {this->MatrixToBrightPartOfMatrix( matrixV )};
-
-  // A useful vector that has a 1 for each row of brightV = each row
-  // of matrixW.
-  const CalcVectorType firstOnes {brightV.rows(), 1.0};
-  // A useful matrix that we will use several times.
-  const CalcMatrixType kernel {brightV.transpose() * brightV};
-
-  // Build a diagonal matrix from the row sums of
-  // brightV*brightV.transpose().  Take its matrix inverse.
-  const CalcDiagMatrixType rowNorms = static_cast< CalcDiagMatrixType >( brightV * ( brightV.transpose() * firstOnes ) ).invert_in_place();
-  // Let normVStart*brightV.transpose() be
-  // brightV*brightV.transpose(), but with each row scaled so that its
-  // elements sum to 1.0.  (This computation is faster than a product
-  // of generic matrices because one factor is a CalcDiagMatrixType.)
-  const CalcMatrixType normVStart {rowNorms * brightV};
-
-  // We will store the row (pixel) index of each distinguishing pixel
-  // in firstPassDistinguisherIndices.
-  std::array< int, NumberOfStains+1 > firstPassDistinguisherIndices {-1};
-  unsigned int numberOfDistinguishers {0};
-  this->FirstPassDistinguishersOld( normVStart, kernel, firstPassDistinguisherIndices, numberOfDistinguishers );
-
-  // Each row of secondPassDistinguisherColors is the vector of color
-  // values for a distinguisher.
-  CalcMatrixType secondPassDistinguisherColors {numberOfDistinguishers, brightV.cols()};
-  this->SecondPassDistinguishersOld(normVStart, kernel, firstPassDistinguisherIndices, numberOfDistinguishers, brightV, secondPassDistinguisherColors);
-
-  distinguishers = secondPassDistinguisherColors;
-}
-
-
-template< typename TInputImage, typename TOutputImage >
-void
-StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::FirstPassDistinguishersOld( const CalcMatrixType &normVStart, const CalcMatrixType &kernel, std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, unsigned int &numberOfDistinguishers ) const
-{
-  // { std::ostringstream mesg; mesg << "Entering FirstPassDistinguishersOld" << std::endl; std::cout << mesg.str(); }
-
-  // Note that in the below, parentheses optimize the order of matrix
-  // chain multiplications and are *very* important for speed.
-
-  // A useful vector that has a 1 for each column of normVStart.
-  const CalcVectorType lastOnes {normVStart.cols(), 1.0};
-  // A useful vector that has a 1 for each row of normVStart.
-  const CalcVectorType firstOnes {normVStart.rows(), 1.0};
-
-  CalcMatrixType normV {normVStart};
-  numberOfDistinguishers = 0;
-  bool needToRecenterMatrix = true;
-  while( numberOfDistinguishers <= NumberOfStains )
-    {
-    // Find the next distinguishing row (pixel)
-    firstPassDistinguisherIndices[numberOfDistinguishers] = this->MatrixToOneDistinguisherOld( kernel, lastOnes, normV );
-    // If we found a distinguisher and we have not yet found
-    // NumberOfStains+1 of them, then look for the next distinguisher.
-    if( firstPassDistinguisherIndices[numberOfDistinguishers] >= 0 )
-      {
-      // We just found a distinguisher
-      ++numberOfDistinguishers;
-      if( numberOfDistinguishers <= NumberOfStains )
-        {
-        // Prepare to look for the next distinguisher
-        if( needToRecenterMatrix )
-          {
-          normV = this->RecenterMatrixOld( normV, firstOnes, firstPassDistinguisherIndices[numberOfDistinguishers - 1] );
-          needToRecenterMatrix = false;
-          }
-        else
-          {
-          normV = this->ProjectMatrixOld( kernel, normV, firstPassDistinguisherIndices[numberOfDistinguishers - 1] );
-          }
-        }
-      }
-    else
-      {
-      // We did not find a distinguisher.  There are no more.
-      break;
-      }
-    }
-}
-
-
-template< typename TInputImage, typename TOutputImage >
-void
-StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::SecondPassDistinguishersOld( const CalcMatrixType &normVStart, const CalcMatrixType &kernel, const std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, const int numberOfDistinguishers, const CalcMatrixType &brightV, CalcMatrixType &secondPassDistinguisherColors ) const
-{
-  // { std::ostringstream mesg; mesg << "Entering SecondPassDistinguishersOld" << std::endl; std::cout << mesg.str(); }
-
-  // Note that in the below, parentheses optimize the order of matrix
-  // chain multiplications and are *very* important for speed.
-
-  // A useful vector that has a 1 for each column of normVStart.
-  const CalcVectorType lastOnes {normVStart.cols(), 1.0};
-  // A useful vector that has a 1 for each row of normVStart.
-  const CalcVectorType firstOnes {normVStart.rows(), 1.0};
-
-  for( int distinguisher {0}; distinguisher < numberOfDistinguishers; ++distinguisher )
-    {
-    CalcMatrixType normV {normVStart};
-    bool needToRecenterMatrix = true;
-    for( int otherDistinguisher {0}; otherDistinguisher < numberOfDistinguishers; ++otherDistinguisher )
-      {
-      // skip if self
-      if( otherDistinguisher != distinguisher )
-        {
-        if( needToRecenterMatrix )
-          {
-          normV = this->RecenterMatrixOld( normV, firstOnes, firstPassDistinguisherIndices[otherDistinguisher] );
-          needToRecenterMatrix = false;
-          }
-        else
-          {
-          normV = this->ProjectMatrixOld( kernel, normV, firstPassDistinguisherIndices[otherDistinguisher] );
-          }
-        }
-      }
-    // We have sent all distinguishers except self to the origin.
-    // Whatever is far from the origin in the same direction as self
-    // is a good replacement for self.  We will take an average among
-    // those that are at least 80% as far as the best.  (Note that
-    // self could still be best, but not always.)
-    const CalcVectorType dotProducts {normV * ( kernel * normV.get_row( firstPassDistinguisherIndices[distinguisher] ) )};
-    const CalcElementType threshold {*std::max_element( dotProducts.begin(), dotProducts.end() ) * 8 / 10};
-    CalcVectorType cumulative {brightV.cols(), 0.0};
-    int NumberOfContributions {0};
-    for( int row {0}; row < dotProducts.size(); ++row )
-      {
-      if( dotProducts[row] >= threshold )
-        {
-        cumulative += brightV.get_row( row );
-        ++NumberOfContributions;
-        }
-      }
-    secondPassDistinguisherColors.set_row( distinguisher, cumulative / NumberOfContributions );
-    }
-}
-
-
-template< typename TInputImage, typename TOutputImage >
-int
-StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::MatrixToOneDistinguisherOld( const CalcMatrixType &kernel, const CalcVectorType &lastOnes, const CalcMatrixType &normV ) const
-{
-  // Note that in the below, parentheses optimize the order of matrix
-  // chain multiplications and are *very* important for speed.
-
-  const CalcVectorType lengths2 = element_product( normV * kernel, normV ) * lastOnes;
-  const CalcElementType * const result {std::max_element( lengths2.begin(), lengths2.end() )};
-  if( *result > epsilon2 )
-    {
-    return std::distance( lengths2.begin(), result );
-    }
-  else
-    {
-    return -1;                // Nothing left to find
-    }
-}
-
-
-template< typename TInputImage, typename TOutputImage >
-typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcMatrixType
-StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::RecenterMatrixOld( const CalcMatrixType &normV, const CalcVectorType &firstOnes, const int row ) const
-{
-  // Note that in the below, parentheses optimize the order of matrix
-  // chain multiplications and are *very* important for speed.
-
-  return normV - outer_product( firstOnes, normV.get_row( row ) );
-}
-
-
-template< typename TInputImage, typename TOutputImage >
-typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcMatrixType
-StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::ProjectMatrixOld( const CalcMatrixType &kernel, const CalcMatrixType &normV, const int row ) const
-{
-  // Note that in the below, parentheses optimize the order of matrix
-  // chain multiplications and are *very* important for speed.
-
-  const CalcVectorType rowValue {normV.get_row( row )};
-  const CalcElementType squared_magnitude = dot_product( kernel * rowValue, rowValue );
-  return normV - outer_product( ( normV * ( kernel * rowValue ) ), rowValue / squared_magnitude );
-}
-
-
-template< typename TInputImage, typename TOutputImage >
-void
-StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, const CalcVectorType &firstOnes,
-  InputPixelType &unstainedPixel, CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const
+::DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, InputPixelType &unstainedPixel, CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const
 {
   // { std::ostringstream mesg; mesg << "Entering DistinguishersToNMFSeeds" << std::endl; std::cout << mesg.str(); }
+
+  const CalcVectorType firstOnes {matrixW.rows(), 1.0};
+  const CalcVectorType midOnes {matrixH.rows(), 1.0};
+  const CalcVectorType lastOnes {matrixV.cols(), 1.0};
 
   int unstainedIndex;
   int hematoxylinIndex;
@@ -646,44 +456,27 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     }
   else
     {
-    // Choose a reasonable unstained point for matrixV.  Make matrixW
-    // and matrixH reasonable, or at least within the feasible region.
-    CalcVectorType unstainedCalcPixel {InputImageLength};
-    const auto max = [] ( CalcElementType a, CalcElementType b ) -> CalcElementType
-      {
-      return std::max( a, b );
-      };
-    for( int color {0}; color < InputImageLength; ++ color )
-      {
-      const CalcVectorType column {matrixV.get_column( color )};
-      unstainedCalcPixel[color] = std::accumulate( column.begin(), column.end(), CalcElementType( 0 ), max );
-      unstainedPixel[color] = unstainedCalcPixel[color]; // return value
-      }
-    const CalcVectorType logUnstained {unstainedCalcPixel.apply( std::log )};
-    const CalcElementType logH[] {2.772589, 1.340485, 0.7744928};
-    const CalcVectorType logHematoxylin {InputImageLength, InputImageLength, logH};
-    const CalcElementType logE[] {0.2479587, 2.496741, 0.6509144};
-    const CalcVectorType logEosin {InputImageLength, InputImageLength, logE};
-    // Set rows of matrixH to reflect hematoxylin and eosin.
-    matrixH.set_row( 0, logHematoxylin );
-    matrixH.set_row( 1, logEosin );
-    // Convert matrixV to be the exponents of decay from the unstained
-    // pixel.
-    matrixV = outer_product( firstOnes, logUnstained ) - matrixV.apply( std::log );
+    // Die gracefully!!!
     }
 
-  // Make sure that matrixV and matrixH are non-negative.
-  const auto clip = [] (const CalcElementType &x)
+  // Make sure that matrixV is non-negative.
+  const auto clip = [] ( const CalcElementType &x )
     {
-    return std::max(CalcElementType(0.0), x);
+    return std::max( CalcElementType( 0.0 ), x );
     };
   matrixV = matrixV.apply( clip );
+
+  // Make sure that each row of matrixH has unit magnitude, and each
+  // element of matrixH is sufficiently non-negative.
+  matrixH = static_cast< CalcDiagMatrixType >( ( element_product( matrixH, matrixH ) * lastOnes ).apply( std::sqrt ) ).invert_in_place() * matrixH;
   matrixH = matrixH.apply( clip );
   matrixH += matrixH.array_inf_norm() * 0.01; // magic constant!!!
 
   // Use an approximate inverse to matrixH to get an intial value of
-  // matrixW.  Make sure that matrixW is non-negative.
-  matrixW = ( matrixV * ( matrixH.transpose() * vnl_matrix_inverse< CalcElementType >( matrixH * matrixH.transpose() ).as_matrix() ) ).apply( clip );
+  // matrixW, and make sure that matrixW is sufficiently non-negative.
+  const CalcMatrixType kernel {vnl_matrix_inverse< CalcElementType >( matrixH * matrixH.transpose() ).as_matrix()};
+  matrixW = ( matrixV * ( matrixH.transpose() * kernel ) ) - outer_product( ( lambda * firstOnes ), ( midOnes * kernel ) );
+  matrixW = matrixW.apply( clip );
   matrixW += matrixW.array_inf_norm() * 0.01; // magic constant!!!
 }
 
@@ -695,8 +488,9 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 {
   // { std::ostringstream mesg; mesg << "Entering DistinguishersToColors" << std::endl; std::cout << mesg.str(); }
 
-  // Figure out which, distinguishers are unstained, hematoxylin (suppresses
-  // red), and eosin (suppresses green).
+  // Figure out which, distinguishers are unstained (highest
+  // brightness), hematoxylin (suppresses red), and eosin (suppresses
+  // green).
   const CalcVectorType lastOnes {distinguishers.cols(), 1.0};
   const CalcVectorType lengths2 {element_product( distinguishers, distinguishers ) * lastOnes};
   const typename CalcVectorType::const_iterator unstainedIterator {std::max_element( lengths2.begin(), lengths2.end() )};
@@ -723,6 +517,11 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 {
   // { std::ostringstream mesg; mesg << "Entering VirtanenEuclidean" << std::endl; std::cout << mesg.str(); }
 
+  const auto clip = [] ( const CalcElementType &x )
+    {
+    return std::max( CalcElementType( 0.0 ), x );
+    };
+  const CalcVectorType lastOnes {matrixV.cols(), 1.0};
   // Apply Virtanen's algorithm to iteratively improve matrixW and
   // matrixH.  Note that parentheses optimize the order of matrix
   // chain multiplications and affect the speed of this method.
@@ -730,9 +529,13 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   unsigned int iter = 0;
   for( ; iter < maxNumberOfIterations; ++iter )
     {
-    matrixW = element_product( matrixW, element_quotient( matrixV * matrixH.transpose() + epsilon2, matrixW * ( matrixH * matrixH.transpose() ) + epsilon2 ) );
+    // Lasso term "lambda" insertion is possibly in novel way.
+    matrixW = element_product( matrixW, element_quotient( ( matrixV * matrixH.transpose() - lambda ).apply( clip ) + epsilon2, matrixW * ( matrixH * matrixH.transpose() ) + epsilon2 ) );
     matrixH = element_product( matrixH, element_quotient( matrixW.transpose() * matrixV + epsilon2, ( matrixW.transpose() * matrixW ) * matrixH + epsilon2 ) );
-    if( (iter & 15) == 15 )
+    // In lieu of rigorous Lagrange multipliers, renormalize rows of
+    // matrixH to have unit magnitude.
+    matrixH = static_cast< CalcDiagMatrixType >( ( element_product( matrixH, matrixH ) * lastOnes ).apply( std::sqrt ) ).invert_in_place() * matrixH;
+    if( ( iter & 15 ) == 15 )
       {
       if( ( matrixW - previousMatrixW ).array_inf_norm() < 1e-3 ) // magic consant!!!
         {
@@ -741,7 +544,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
       previousMatrixW = matrixW;
       }
     }
-  std::cout << "Number of iterations = " << iter << std::endl;
+  // { std::ostringstream mesg; mesg << "Number of iterations = " << iter << std::end; }
 }
 
 
@@ -750,6 +553,10 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::VirtanenKLDivergence( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const
 {
+  // If this codes is going to get used, we need to incorporate Lasso
+  // penalty lambda and Lagrange multipliers to make each row of
+  // matrixH have magnitude 1.0!!!
+
   // { std::ostringstream mesg; mesg << "Entering VirtanenKLDivergence" << std::endl; std::cout << mesg.str(); }
 
   // Apply Virtanen's algorithm to iteratively improve matrixW and

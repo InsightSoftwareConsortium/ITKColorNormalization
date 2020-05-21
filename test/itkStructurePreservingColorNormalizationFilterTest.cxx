@@ -83,7 +83,7 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
   EXERCISE_BASIC_OBJECT_METHODS( filter, StructurePreservingColorNormalizationFilter, ImageToImageFilter );
 
   // Create input images to avoid test dependencies.
-  const ImageType::SizeValueType testSize = 16;
+  const ImageType::SizeValueType testSize = 128;
   ImageType::SizeType size;
   size.Fill( testSize );
   ImageType::Pointer input = ImageType::New();
@@ -124,6 +124,8 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
     logEosin.put( color, logWhite.get( color ) - std::log( static_cast< CalcElementType >( eosin[color] ) ) );
     }
 
+  // { std::ostringstream mesg; mesg << "logHematoxylin = " << logHematoxylin << ", logEosin = " << logEosin << std::endl; std::cout << mesg.str(); }
+
   // Randomly generate both input images
   for( ImageType::Pointer image : {input, refer} )
     {
@@ -139,7 +141,7 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
       const double hematoxylinContribution {0.1 * ( 1.0 / uniformGenerator->GetVariate() - 1.0 )};
       const double eosinContribution {0.1 * ( 1.0 / uniformGenerator->GetVariate() - 1.0 )};
       const double noise {5.0 * normalGenerator->GetVariate()};
-      const CalcVectorType randomPixelValue {(logWhite - ( hematoxylinContribution * logHematoxylin ) - ( eosinContribution * logEosin )).apply(std::exp) + noise};
+      const CalcVectorType randomPixelValue {( logWhite - ( hematoxylinContribution * logHematoxylin ) - ( eosinContribution * logEosin ) ).apply( std::exp ) + noise};
       // std::cout << "hematoxylinContribution = " << hematoxylinContribution << ", eosinContribution = " << eosinContribution << ", randomPixelValue = " << randomPixelValue << std::endl;
       for( int color {0}; color < InputImageLength; ++color )
         {
