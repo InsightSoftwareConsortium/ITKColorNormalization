@@ -107,7 +107,7 @@ protected:
 
   void DynamicThreadedGenerateData( const OutputRegionType & outputRegion ) override;
 
-  void ImageToNMF( InputRegionConstIterator &iter, CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH, InputPixelType &pixelUnstained ) const;
+  int ImageToNMF( InputRegionConstIterator &iter, CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH, InputPixelType &pixelUnstained ) const;
 
   void ImageToMatrix( InputRegionConstIterator &iter, CalcMatrixType &matrixV ) const;
 
@@ -126,7 +126,7 @@ protected:
 
   CalcMatrixType ProjectMatrix( const CalcMatrixType &normV, const int row ) const;
 
-  void DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, InputPixelType &pixelUnstained, CalcMatrixType &matrixV, CalcMatrixType &matrixW,
+  int DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, InputPixelType &pixelUnstained, CalcMatrixType &matrixV, CalcMatrixType &matrixW,
     CalcMatrixType &matrixH ) const;
 
   void DistinguishersToColors( const CalcMatrixType &distinguishers, int &unstainedIndex, int &hematoxylinIndex, int &eosinIndex ) const;
@@ -138,6 +138,7 @@ protected:
   void NMFsToImage( const CalcMatrixType &inputW, const CalcMatrixType &inputH, const CalcMatrixType &referH, const InputPixelType &referUnstained, OutputRegionIterator &out ) const;
 
 private:
+  static constexpr CalcElementType biggerEpsilon {1e-3}; // a small matrix.array_inf_norm() value
   static constexpr CalcElementType epsilon {1e-6};   // a very small matrix element
   static constexpr CalcElementType epsilon2 {epsilon * epsilon}; // a very small squared magnitude for a vector.
   static constexpr unsigned int    maxNumberOfIterations {10000u}; // For Virtanen's non-negative matrix factorization algorithm.

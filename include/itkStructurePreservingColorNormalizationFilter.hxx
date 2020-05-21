@@ -93,9 +93,16 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     InputRegionConstIterator inIter {inputPtr, inputPtr->GetRequestedRegion()};
     CalcMatrixType inputV;
     InputPixelType inputUnstainedPixel;
-    this->ImageToNMF( inIter, inputV, m_inputW, m_inputH, inputUnstainedPixel );
-    m_inputPtr = inputPtr;
-    m_inputTimeStamp = inputPtr->GetTimeStamp();
+    if( this->ImageToNMF( inIter, inputV, m_inputW, m_inputH, inputUnstainedPixel ) == 0 )
+      {
+      m_inputPtr = inputPtr;
+      m_inputTimeStamp = inputPtr->GetTimeStamp();
+      }
+    else
+      {
+      // we failed
+      m_inputPtr = nullptr;
+      }
     }
 
   if( referPtr != nullptr && ( referPtr != m_referPtr || referPtr->GetTimeStamp() != m_referTimeStamp ) )
@@ -103,9 +110,16 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     InputRegionConstIterator refIter {referPtr, referPtr->GetRequestedRegion()};
     CalcMatrixType referV;
     CalcMatrixType referW;
-    this->ImageToNMF( refIter, referV, referW, m_referH, m_referUnstainedPixel );
-    m_referPtr = referPtr;
-    m_referTimeStamp = referPtr->GetTimeStamp();
+    if( this->ImageToNMF( refIter, referV, referW, m_referH, m_referUnstainedPixel ) == 0)
+      {
+      m_referPtr = referPtr;
+      m_referTimeStamp = referPtr->GetTimeStamp();
+      }
+    else
+      {
+      // we failed
+      m_referPtr = nullptr;
+      }
     }
 }
 
@@ -119,6 +133,8 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 
   OutputImageType * const outputPtr = this->GetOutput();
   itkAssertOrThrowMacro( outputPtr != nullptr, "An output image needs to be supplied" )
+  itkAssertOrThrowMacro( m_inputPtr != nullptr, "The image to be normalized could not be processed" )
+  itkAssertOrThrowMacro( m_referPtr != nullptr, "The reference image could not be processed" )
   OutputRegionIterator outIter {outputPtr, outputRegion};
 
   this->NMFsToImage( m_inputW, m_inputH, m_referH, m_referUnstainedPixel, outIter );
@@ -126,7 +142,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 
 
 template< typename TInputImage, typename TOutputImage >
-void
+int
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::ImageToNMF( InputRegionConstIterator &iter, CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH, InputPixelType &unstainedPixel ) const
 {
@@ -156,7 +172,10 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   // Use the distinguishers as seeds to the non-negative matrix
   // factorization.  The published SPCN algorithm uses a Euclidean
   // penalty function, so we will hard code its use here.
-  this->DistinguishersToNMFSeeds( distinguishers, unstainedPixel, matrixV, matrixW, matrixH );
+  if( this->DistinguishersToNMFSeeds( distinguishers, unstainedPixel, matrixV, matrixW, matrixH ) != 0 )
+    {
+    return 1;                   // we failed.
+    }
   // { std::ostringstream mesg; mesg << "Before VirtanenEuclidean: (log) matrixH = " << matrixH << std::end; }
   // { std::ostringstream mesg; mesg << "Before VirtanenEuclidean: (log) matrixW = " << matrixW << std::end; }
   // this->VirtanenEuclidean( matrixV, matrixW, matrixH );
@@ -172,6 +191,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 
   // { std::ostringstream mesg; mesg << "ImageToNMF: (log) matrixH = " << matrixH << std::end; }
   // { std::ostringstream mesg; mesg << "ImageToNMF: (log) matrixW = " << matrixW << std::end; }
+  return 0;
 }
 
 
@@ -418,7 +438,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 
 
 template< typename TInputImage, typename TOutputImage >
-void
+int
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, InputPixelType &unstainedPixel, CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const
 {
@@ -456,7 +476,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     }
   else
     {
-    // Die gracefully!!!
+    return 1;                   // we failed
     }
 
   // Make sure that matrixV is non-negative.
@@ -470,14 +490,14 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   // element of matrixH is sufficiently non-negative.
   matrixH = static_cast< CalcDiagMatrixType >( ( element_product( matrixH, matrixH ) * lastOnes ).apply( std::sqrt ) ).invert_in_place() * matrixH;
   matrixH = matrixH.apply( clip );
-  matrixH += matrixH.array_inf_norm() * 0.01; // magic constant!!!
 
   // Use an approximate inverse to matrixH to get an intial value of
   // matrixW, and make sure that matrixW is sufficiently non-negative.
   const CalcMatrixType kernel {vnl_matrix_inverse< CalcElementType >( matrixH * matrixH.transpose() ).as_matrix()};
+  // Do we really want lambda here?!!!
   matrixW = ( matrixV * ( matrixH.transpose() * kernel ) ) - outer_product( ( lambda * firstOnes ), ( midOnes * kernel ) );
   matrixW = matrixW.apply( clip );
-  matrixW += matrixW.array_inf_norm() * 0.01; // magic constant!!!
+  return 0;
 }
 
 
@@ -529,7 +549,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   unsigned int iter = 0;
   for( ; iter < maxNumberOfIterations; ++iter )
     {
-    // Lasso term "lambda" insertion is possibly in novel way.
+    // Lasso term "lambda" insertion is possibly in a novel way.
     matrixW = element_product( matrixW, element_quotient( ( matrixV * matrixH.transpose() - lambda ).apply( clip ) + epsilon2, matrixW * ( matrixH * matrixH.transpose() ) + epsilon2 ) );
     matrixH = element_product( matrixH, element_quotient( matrixW.transpose() * matrixV + epsilon2, ( matrixW.transpose() * matrixW ) * matrixH + epsilon2 ) );
     // In lieu of rigorous Lagrange multipliers, renormalize rows of
@@ -537,7 +557,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     matrixH = static_cast< CalcDiagMatrixType >( ( element_product( matrixH, matrixH ) * lastOnes ).apply( std::sqrt ) ).invert_in_place() * matrixH;
     if( ( iter & 15 ) == 15 )
       {
-      if( ( matrixW - previousMatrixW ).array_inf_norm() < 1e-3 ) // magic consant!!!
+      if( ( matrixW - previousMatrixW ).array_inf_norm() < biggerEpsilon )
         {
         break;
         }
@@ -553,9 +573,9 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::VirtanenKLDivergence( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const
 {
-  // If this codes is going to get used, we need to incorporate Lasso
-  // penalty lambda and Lagrange multipliers to make each row of
-  // matrixH have magnitude 1.0!!!
+  // If this method is going to get used, we may need to incorporate
+  // the Lasso penalty lambda for matrixW and incorporate the Lagrange
+  // multipliers to make each row of matrixH have magnitude 1.0.
 
   // { std::ostringstream mesg; mesg << "Entering VirtanenKLDivergence" << std::endl; std::cout << mesg.str(); }
 
@@ -572,7 +592,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
         outer_product( matrixW.transpose() * firstOnes, lastOnes ) + epsilon2 ) );
     if( iter & 15 == 15 )
       {
-      if( ( matrixW - previousMatrixW ).array_inf_norm() < epsilon )
+      if( ( matrixW - previousMatrixW ).array_inf_norm() < biggerEpsilon )
         break;
       previousMatrixW = matrixW;
       }
@@ -645,10 +665,16 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 }
 
 
-// epsilon, epsilon2, and lambda are explicitly defined here, even
-// though they are declared and initialized as static constexpr
-// members, because they are passed by reference in some versions of
-// the implementation.
+// biggerEpsilon, epsilon, epsilon2, and lambda are explicitly defined
+// here, even though they are declared and initialized as static
+// constexpr members, because they are passed by reference in some
+// versions of the implementation, and that can get some compilers to
+// complain.
+template< typename TInputImage, typename TOutputImage >
+const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcElementType
+StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
+::biggerEpsilon;
+
 template< typename TInputImage, typename TOutputImage >
 const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcElementType
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
