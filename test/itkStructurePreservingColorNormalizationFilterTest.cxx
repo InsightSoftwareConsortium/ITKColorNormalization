@@ -1,6 +1,6 @@
 /*=========================================================================
  *
- *  Copyright NumFOCUS!!!
+ *  Copyright NumFOCUS
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -112,16 +112,17 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
   eosin.SetGreen( 21 );
   eosin.SetBlue( 133 );
 
-  using CalcElementType = double;
-  using CalcVectorType = vnl_vector< CalcElementType >;
-  CalcVectorType logWhite {InputImageLength};
-  CalcVectorType logHematoxylin {InputImageLength};
-  CalcVectorType logEosin {InputImageLength};
+  using CalcElementType = typename FilterType::CalcElementType;
+  using CalcRowVectorType = typename FilterType::CalcRowVectorType;
+  using CalcUnaryFunctionPointer = typename FilterType::CalcUnaryFunctionPointer;
+  CalcRowVectorType logWhite {CalcRowVectorType::Constant( 1, InputImageLength, 1.0 )};
+  CalcRowVectorType logHematoxylin {CalcRowVectorType::Constant( 1, InputImageLength, 1.0 )};
+  CalcRowVectorType logEosin {CalcRowVectorType::Constant( 1, InputImageLength, 1.0 )};
   for( int color {0}; color < InputImageLength; ++color )
     {
-    logWhite.put( color, std::log( static_cast< CalcElementType >( white[color] ) ) );
-    logHematoxylin.put( color, logWhite.get( color ) - std::log( static_cast< CalcElementType >( hematoxylin[color] ) ) );
-    logEosin.put( color, logWhite.get( color ) - std::log( static_cast< CalcElementType >( eosin[color] ) ) );
+    logWhite( color ) = std::log( static_cast< CalcElementType >( white[color] ) );
+    logHematoxylin( color ) = logWhite( color ) - std::log( static_cast< CalcElementType >( hematoxylin[color] ) );
+    logEosin( color ) = logWhite( color ) - std::log( static_cast< CalcElementType >( eosin[color] ) );
     }
 
   // { std::ostringstream mesg; mesg << "logHematoxylin = " << logHematoxylin << ", logEosin = " << logEosin << std::endl; std::cout << mesg.str(); }
@@ -138,14 +139,14 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
     PixelType tmp;
     for( iter.GoToBegin(); !iter.IsAtEnd(); ++iter )
       {
-      const double hematoxylinContribution {0.1 * ( 1.0 / uniformGenerator->GetVariate() - 1.0 )};
-      const double eosinContribution {0.1 * ( 1.0 / uniformGenerator->GetVariate() - 1.0 )};
-      const double noise {5.0 * normalGenerator->GetVariate()};
-      const CalcVectorType randomPixelValue {( logWhite - ( hematoxylinContribution * logHematoxylin ) - ( eosinContribution * logEosin ) ).apply( std::exp ) + noise};
+      const CalcElementType hematoxylinContribution( 0.1 * ( 1.0 / uniformGenerator->GetVariate() - 1.0 ) );
+      const CalcElementType eosinContribution( 0.1 * ( 1.0 / uniformGenerator->GetVariate() - 1.0 ) );
+      const CalcElementType noise( 5.0 * normalGenerator->GetVariate() );
+      const CalcRowVectorType randomPixelValue {( logWhite - ( hematoxylinContribution * logHematoxylin ) - ( eosinContribution * logEosin ) ).unaryExpr( CalcUnaryFunctionPointer( std::exp ) ).array() + noise};
       // std::cout << "hematoxylinContribution = " << hematoxylinContribution << ", eosinContribution = " << eosinContribution << ", randomPixelValue = " << randomPixelValue << std::endl;
       for( int color {0}; color < InputImageLength; ++color )
         {
-        tmp[color] = std::max( 0.0, std::min( 255.0, randomPixelValue.get( color ) ) );
+        tmp[color] = std::max( CalcElementType( 0.0 ), std::min( CalcElementType( 255.0 ), randomPixelValue( color ) ) );
         }
       iter.Set( tmp );
       }

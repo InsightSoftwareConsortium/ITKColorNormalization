@@ -1,6 +1,6 @@
 /*=========================================================================
  *
- *  Copyright NumFOCUS!!!
+ *  Copyright NumFOCUS
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include "itkImageRegionIterator.h"
 #include "itkImageRegionConstIterator.h"
 #include "itkSmartPointer.h"
+#include "itkeigen/Eigen/Core"
 
 namespace itk
 {
@@ -55,10 +56,12 @@ public:
   using OutputRegionIterator = typename itk::ImageRegionIterator< OutputImageType >;
   using OutputPixelType = typename OutputImageType::PixelType;
 
-  using CalcElementType = double;
-  using CalcMatrixType = vnl_matrix< CalcElementType >; // Use Eigen instead of VNL?!!!
-  using CalcVectorType = vnl_vector< CalcElementType >;
-  using CalcDiagMatrixType = vnl_diag_matrix< CalcElementType >;
+  using CalcElementType = float;
+  using CalcMatrixType = Eigen::Matrix< CalcElementType, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor >;
+  using CalcColVectorType = Eigen::Matrix< CalcElementType, Eigen::Dynamic, 1 >;
+  using CalcRowVectorType = Eigen::Matrix< CalcElementType, 1, Eigen::Dynamic >;
+  using CalcDiagMatrixType = Eigen::DiagonalMatrix< CalcElementType, Eigen::Dynamic >;
+  using CalcUnaryFunctionPointer = CalcElementType ( * ) ( CalcElementType );
 
   /** Standard class typedefs. */
   using Self = StructurePreservingColorNormalizationFilter< InputImageType, OutputImageType >;
@@ -118,18 +121,18 @@ protected:
   void FirstPassDistinguishers( const CalcMatrixType &normVStart, std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, unsigned int &numberOfDistinguishers ) const;
 
   void SecondPassDistinguishers( const CalcMatrixType &normVStart, const std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, const int numberOfDistinguishers,
-    const CalcMatrixType &brightV, CalcMatrixType &secondPassDistinguisherColors ) const;
+    CalcMatrixType &secondPassDistinguisherColors ) const;
 
-  int MatrixToOneDistinguisher( const CalcMatrixType &normV, const CalcVectorType &lastOnes ) const;
+  int MatrixToOneDistinguisher( const CalcMatrixType &normV, const CalcColVectorType &lastOnes ) const;
 
-  CalcMatrixType RecenterMatrix( const CalcMatrixType &normV, const CalcVectorType &firstOnes, const int row ) const;
+  CalcMatrixType RecenterMatrix( const CalcMatrixType &normV, const CalcColVectorType &firstOnes, const int row ) const;
 
   CalcMatrixType ProjectMatrix( const CalcMatrixType &normV, const int row ) const;
 
   int DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, InputPixelType &pixelUnstained, CalcMatrixType &matrixV, CalcMatrixType &matrixW,
     CalcMatrixType &matrixH ) const;
 
-  void DistinguishersToColors( const CalcMatrixType &distinguishers, int &unstainedIndex, int &hematoxylinIndex, int &eosinIndex ) const;
+  void DistinguishersToColors( const CalcMatrixType &distinguishers, long int &unstainedIndex, long int &hematoxylinIndex, long int &eosinIndex ) const;
 
   void VirtanenEuclidean( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const;
 
@@ -139,11 +142,28 @@ protected:
 
 private:
   static constexpr CalcElementType biggerEpsilon {1e-3}; // a small matrix.array_inf_norm() value
-  static constexpr CalcElementType epsilon {1e-6};   // a very small matrix element
+  static constexpr CalcElementType epsilon {1e-6}; // a very small matrix element
   static constexpr CalcElementType epsilon2 {epsilon * epsilon}; // a very small squared magnitude for a vector.
   static constexpr unsigned int    maxNumberOfIterations {10000u}; // For Virtanen's non-negative matrix factorization algorithm.
   static constexpr CalcElementType lambda {0.02}; // For Lasso penalty.
 
+  // Our installation of Eigen3 doesn't have iterators.  (They arrive
+  // with Eigen 3.4.)  We define begin, begin, end, and cend functions
+  // here.
+  template<typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
+  static CalcElementType *begin(Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix);
+
+  template<typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
+  static const CalcElementType *cbegin(const Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix);
+
+  template<typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
+  static CalcElementType *end(Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix);
+
+  template<typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
+  static const CalcElementType *cend(const Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix);
+
+  // Private members, mostly for the purpose of caching results for use
+  // the next time the pipeline is run.
   const InputImageType *m_inputPtr;
   TimeStamp m_inputTimeStamp;
   CalcMatrixType m_inputW;
