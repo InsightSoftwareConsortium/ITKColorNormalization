@@ -159,29 +159,29 @@ protected:
 #define STRUCTUREPRESERVINGCOLORNORMALIZATIONFILTER_STRICT_EIGEN3_ITERATORS 0
 #if STRUCTUREPRESERVINGCOLORNORMALIZATIONFILTER_STRICT_EIGEN3_ITERATORS
   template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
-  static _Scalar *begin(typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix);
+  static _Scalar *begin( typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix );
 
   template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
-  static const _Scalar *cbegin(const typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix);
+  static const _Scalar *cbegin( const typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix );
 
   template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
-  static _Scalar *end(typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix);
+  static _Scalar *end( typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix );
 
   template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
-  static const _Scalar *cend(const typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix);
+  static const _Scalar *cend( const typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix );
 
 #else
   template< typename TMatrix >
-  static CalcElementType *begin(TMatrix &matrix);
+  static CalcElementType *begin( TMatrix &matrix );
 
   template< typename TMatrix >
-  static const CalcElementType *cbegin(const TMatrix &matrix);
+  static const CalcElementType *cbegin( const TMatrix &matrix );
 
   template< typename TMatrix >
-  static CalcElementType *end(TMatrix &matrix);
+  static CalcElementType *end( TMatrix &matrix );
 
   template< typename TMatrix >
-  static const CalcElementType *cend(const TMatrix &matrix);
+  static const CalcElementType *cend( const TMatrix &matrix );
 #endif
 
   // These members are for the purpose of caching results for use the

@@ -59,10 +59,6 @@ public:
 
 int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] )
 {
-// Install correct output (to be compared to during test) to
-// ~/git/ITKStructurePreservingColorNormalization-build/ExternalData/test/Baseline/itkStructurePreservingColorNormalizationFilterTestOutput.mha
-// or similar location!!!
-
   if( argc < 4 )
   {
     std::cerr << "Missing parameters." << std::endl;
@@ -92,11 +88,11 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
 
   using ReaderType = itk::ImageFileReader< ImageType >;
   ReaderType::Pointer reader0 = ReaderType::New();
-  reader0->SetFileName(input0ImageFileName);
+  reader0->SetFileName( input0ImageFileName );
   filter->SetInput( 0, reader0->GetOutput() );   // image to be normalized using ...
 
   ReaderType::Pointer reader1 = ReaderType::New();
-  reader1->SetFileName(input1ImageFileName);
+  reader1->SetFileName( input1ImageFileName );
   filter->SetInput( 1, reader1->GetOutput() );   // reference image for normalization
 
 #if 0

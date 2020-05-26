@@ -29,7 +29,7 @@ namespace itk
 template< typename TInputImage, typename TOutputImage >
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::StructurePreservingColorNormalizationFilter()
-  :m_ColorIndexSuppressedByHematoxylin(0), m_ColorIndexSuppressedByEosin(1)
+  :m_ColorIndexSuppressedByHematoxylin( 0 ), m_ColorIndexSuppressedByEosin( 1 )
 {}
 
 
@@ -109,7 +109,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   if( referPtr != nullptr && ( referPtr != m_referPtr || referPtr->GetTimeStamp() != m_referTimeStamp ) )
     {
     InputRegionConstIterator referIter {referPtr, referPtr->GetRequestedRegion()};
-    if( this->ImageToNMF( referIter, m_referH, m_referUnstainedPixel ) == 0)
+    if( this->ImageToNMF( referIter, m_referH, m_referUnstainedPixel ) == 0 )
       {
       m_referPtr = referPtr;
       m_referTimeStamp = referPtr->GetTimeStamp();
@@ -617,7 +617,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     matrixV = ( matrixV.array() + nearZero ).matrix();
     }
   const CalcColVectorType firstOnes {CalcColVectorType::Constant( numberOfPixels, 1, 1.0 )};
-  matrixV = (firstOnes * logInputUnstained) - matrixV.unaryExpr( CalcUnaryFunctionPointer( std::log ) );
+  matrixV = ( firstOnes * logInputUnstained ) - matrixV.unaryExpr( CalcUnaryFunctionPointer( std::log ) );
   const auto clip = [] ( const CalcElementType &x )
     {
     return std::max( CalcElementType( 0.0 ), x );
@@ -630,14 +630,14 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 
   // Find the associated matrixW
   CalcMatrixType matrixW {matrixV.rows(), inputH.cols()};
-  this->VirtanenEuclidean(matrixV, matrixW, inputH);
+  this->VirtanenEuclidean( matrixV, matrixW, inputH );
 
   // Use the matrixW with referH to compute updated values for
   // matrixV.
   matrixV = matrixW * referH;
 
   // Convert matrixV using exponentiation and the referUnstained pixel.
-  matrixV = ( (firstOnes * logReferUnstained) - matrixV ).unaryExpr( CalcUnaryFunctionPointer( std::exp ) );
+  matrixV = ( ( firstOnes * logReferUnstained ) - matrixV ).unaryExpr( CalcUnaryFunctionPointer( std::exp ) );
 
   OutputPixelType pixelValue;
   outputIter.GoToBegin();
@@ -656,7 +656,7 @@ template< typename TInputImage, typename TOutputImage >
 template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
 _Scalar *
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::begin(typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix)
+::begin( typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix )
 {
   return matrix.data();
 }
@@ -665,7 +665,7 @@ template< typename TInputImage, typename TOutputImage >
 template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
 const _Scalar *
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::cbegin(const typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix)
+::cbegin( const typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix )
 {
   return matrix.data();
 }
@@ -674,7 +674,7 @@ template< typename TInputImage, typename TOutputImage >
 template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
 _Scalar *
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::end(typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix)
+::end( typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix )
 {
   return matrix.data() + matrix.size();
 }
@@ -683,7 +683,7 @@ template< typename TInputImage, typename TOutputImage >
 template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
 const _Scalar *
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::cend(const typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix)
+::cend( const typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix )
 {
   return matrix.data() + matrix.size();
 }
@@ -693,7 +693,7 @@ template< typename TInputImage, typename TOutputImage >
 template< typename TMatrix >
 typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcElementType *
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::begin(TMatrix &matrix)
+::begin( TMatrix &matrix )
 {
   return matrix.data();
 }
@@ -702,7 +702,7 @@ template< typename TInputImage, typename TOutputImage >
 template< typename TMatrix >
 const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcElementType *
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::cbegin(const TMatrix &matrix)
+::cbegin( const TMatrix &matrix )
 {
   return matrix.data();
 }
@@ -711,7 +711,7 @@ template< typename TInputImage, typename TOutputImage >
 template< typename TMatrix >
 typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcElementType *
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::end(TMatrix &matrix)
+::end( TMatrix &matrix )
 {
   return matrix.data() + matrix.size();
 }
@@ -720,7 +720,7 @@ template< typename TInputImage, typename TOutputImage >
 template< typename TMatrix >
 const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcElementType *
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::cend(const TMatrix &matrix)
+::cend( const TMatrix &matrix )
 {
   return matrix.data() + matrix.size();
 }
