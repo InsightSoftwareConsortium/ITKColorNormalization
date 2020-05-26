@@ -17,5 +17,7 @@ itk_add_test(NAME itkStructurePreservingColorNormalizationFilterTest
     ${ITK_TEST_OUTPUT_DIR}/itkStructurePreservingColorNormalizationFilterTestOutput.mha
     DATA{Baseline/itkStructurePreservingColorNormalizationFilterTestOutput.mha}
   itkStructurePreservingColorNormalizationFilterTest
+    DATA{Baseline/itkStructurePreservingColorNormalizationFilterTestInput0.png}
+    DATA{Baseline/itkStructurePreservingColorNormalizationFilterTestInput1.png}
     ${ITK_TEST_OUTPUT_DIR}/itkStructurePreservingColorNormalizationFilterTestOutput.mha
   )
