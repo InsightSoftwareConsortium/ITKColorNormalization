@@ -19,6 +19,7 @@
 #include "itkStructurePreservingColorNormalizationFilter.h"
 
 #include "itkCommand.h"
+#include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 #include "itkTestingMacros.h"
 #include "itkMersenneTwisterRandomVariateGenerator.h"
@@ -62,15 +63,19 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
 // ~/git/ITKStructurePreservingColorNormalization-build/ExternalData/test/Baseline/itkStructurePreservingColorNormalizationFilterTestOutput.mha
 // or similar location!!!
 
-  if( argc < 2 )
+  if( argc < 4 )
   {
     std::cerr << "Missing parameters." << std::endl;
     std::cerr << "Usage: " << itkNameOfTestExecutableMacro( argv );
+    std::cerr << " input0Image";
+    std::cerr << " input1Image";
     std::cerr << " outputImage";
     std::cerr << std::endl;
     return EXIT_FAILURE;
   }
-  const char * const outputImageFileName = argv[1];
+  const char * const input0ImageFileName = argv[1];
+  const char * const input1ImageFileName = argv[2];
+  const char * const outputImageFileName = argv[3];
 
   constexpr unsigned int Dimension = 2;
   using PixelType = typename itk::RGBPixel< unsigned char >;
@@ -82,6 +87,19 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
 
   EXERCISE_BASIC_OBJECT_METHODS( filter, StructurePreservingColorNormalizationFilter, ImageToImageFilter );
 
+  ShowProgress::Pointer showProgress = ShowProgress::New();
+  filter->AddObserver( itk::ProgressEvent(), showProgress );
+
+  using ReaderType = itk::ImageFileReader< ImageType >;
+  ReaderType::Pointer reader0 = ReaderType::New();
+  reader0->SetFileName(input0ImageFileName);
+  filter->SetInput( 0, reader0->GetOutput() );   // image to be normalized using ...
+
+  ReaderType::Pointer reader1 = ReaderType::New();
+  reader1->SetFileName(input1ImageFileName);
+  filter->SetInput( 1, reader1->GetOutput() );   // reference image for normalization
+
+#if 0
   // Create input images to avoid test dependencies.
   const ImageType::SizeValueType testSize = 128;
   ImageType::SizeType size;
@@ -142,7 +160,8 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
       const CalcElementType hematoxylinContribution( 0.1 * ( 1.0 / uniformGenerator->GetVariate() - 1.0 ) );
       const CalcElementType eosinContribution( 0.1 * ( 1.0 / uniformGenerator->GetVariate() - 1.0 ) );
       const CalcElementType noise( 5.0 * normalGenerator->GetVariate() );
-      const CalcRowVectorType randomPixelValue {( logWhite - ( hematoxylinContribution * logHematoxylin ) - ( eosinContribution * logEosin ) ).unaryExpr( CalcUnaryFunctionPointer( std::exp ) ).array() + noise};
+      const CalcRowVectorType randomPixelValue
+        {( logWhite - ( hematoxylinContribution * logHematoxylin ) - ( eosinContribution * logEosin ) ).unaryExpr( CalcUnaryFunctionPointer( std::exp ) ).array() + noise};
       // std::cout << "hematoxylinContribution = " << hematoxylinContribution << ", eosinContribution = " << eosinContribution << ", randomPixelValue = " << randomPixelValue << std::endl;
       for( int color {0}; color < InputImageLength; ++color )
         {
@@ -152,10 +171,9 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
       }
     }
 
-  ShowProgress::Pointer showProgress = ShowProgress::New();
-  filter->AddObserver( itk::ProgressEvent(), showProgress );
   filter->SetInput( 0, input );   // image to be normalized using ...
   filter->SetInput( 1, refer );   // reference image
+#endif
 
   using WriterType = itk::ImageFileWriter< ImageType >;
   WriterType::Pointer writer = WriterType::New();
