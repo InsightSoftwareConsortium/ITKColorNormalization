@@ -40,7 +40,8 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 {
   Superclass::PrintSelf( os, indent );
 
-  // Write me?!!!
+  os << indent << "ColorIndexSuppressedByHematoxylin:" << m_ColorIndexSuppressedByHematoxylin << std::endl
+     << indent << "ColorIndexSuppressedByEosin:" << m_ColorIndexSuppressedByEosin << std::endl;
 }
 
 
@@ -49,8 +50,6 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::GenerateInputRequestedRegion()
 {
-  // { std::ostringstream mesg; mesg << "Entering GenerateInputRequestedRegion" << std::endl; std::cout << mesg.str() << std::flush; }
-
   // Call the superclass' implementation of this method
   Superclass::GenerateInputRequestedRegion();
 
@@ -75,8 +74,6 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::BeforeThreadedGenerateData()
 {
-  // { std::ostringstream mesg; mesg << "Entering BeforeThreadedGenerateData" << std::endl; std::cout << mesg.str() << std::flush; }
-
   // Call the superclass' implementation of this method
   Superclass::BeforeThreadedGenerateData();
 
@@ -150,8 +147,6 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::DynamicThreadedGenerateData( const OutputRegionType & outputRegion )
 {
-  // { std::ostringstream mesg; mesg << "Entering DynamicThreadedGenerateData" << std::endl; std::cout << mesg.str() << std::flush; }
-
   OutputImageType * const outputPtr = this->GetOutput();
   itkAssertOrThrowMacro( outputPtr != nullptr, "An output image needs to be supplied" )
   OutputRegionIterator outputIter {outputPtr, outputRegion};
@@ -165,8 +160,6 @@ int
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::ImageToNMF( InputRegionConstIterator &inIter, CalcMatrixType &matrixH, InputPixelType &unstainedPixel ) const
 {
-  // { std::ostringstream mesg; mesg << "Entering ImageToNMF" << std::endl; std::cout << mesg.str() << std::flush; }
-
   // To maintain locality of memory references, we are using
   // numberOfPixels as the number of rows rather than as the number of
   // columns.  With V=WH, as is standard in non-negative matrix
@@ -191,7 +184,6 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     return 1;                   // we failed.
     }
 
-  // { std::ostringstream mesg; mesg << "ImageToNMF: (log) matrixH = " << matrixH << std::endl; std::cout << mesg.str() << std::flush; }
   return 0;
 }
 
@@ -201,8 +193,6 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::ImageToMatrix( InputRegionConstIterator &inIter, CalcMatrixType &matrixV ) const
 {
-  // { std::ostringstream mesg; mesg << "Entering ImageToMatrix" << std::endl; std::cout << mesg.str() << std::flush; }
-
   InputSizeValueType pixelIndex {0};
   for( inIter.GoToBegin(); !inIter.IsAtEnd(); ++inIter, ++pixelIndex )
     {
@@ -228,8 +218,6 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::MatrixToBrightPartOfMatrix( CalcMatrixType &matrixV ) const
 {
-  // { std::ostringstream mesg; mesg << "Entering MatrixToBrightPartOfMatrix" << std::endl; std::cout << mesg.str() << std::flush; }
-
   // A useful vector that has a 1 for each column of matrixV.
   const CalcColVectorType lastOnes {CalcColVectorType::Constant( matrixV.cols(), 1, 1.0 )};
 
@@ -273,8 +261,6 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::MatrixToDistinguishers( const CalcMatrixType &matrixV, CalcMatrixType &distinguishers ) const
 {
-  // { std::ostringstream mesg; mesg << "Entering MatrixToDistinguishers" << std::endl; std::cout << mesg.str
-
   const CalcMatrixType normVStart {matrixV};
 
   // We will store the row (pixel) index of each distinguishing pixel
@@ -297,8 +283,6 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::FirstPassDistinguishers( const CalcMatrixType &normVStart, std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, InputSizeValueType &numberOfDistinguishers ) const
 {
-  // { std::ostringstream mesg; mesg << "Entering FirstPassDistinguishers" << std::endl; std::cout << mesg.str() << std::flush; }
-
   // A useful vector that has a 1 for each column of normVStart.
   const CalcColVectorType lastOnes {CalcColVectorType::Constant( normVStart.cols(), 1, 1.0 )};
   // A useful vector that has a 1 for each row of normVStart.
@@ -337,7 +321,6 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
       break;
       }
     }
-  // { std::ostringstream mesg; mesg << "firstPassDistinguisherIndices = " << firstPassDistinguisherIndices[0] << " " << firstPassDistinguisherIndices[1] << " " << firstPassDistinguisherIndices[2] << std::endl; std::cout << mesg.str() << std::flush; }
 }
 
 
@@ -347,8 +330,6 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::SecondPassDistinguishers( const CalcMatrixType &normVStart, const std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, const InputSizeValueType numberOfDistinguishers,
   CalcMatrixType &secondPassDistinguisherColors ) const
 {
-  // { std::ostringstream mesg; mesg << "Entering SecondPassDistinguishers" << std::endl; std::cout << mesg.str() << std::flush; }
-
   // A useful vector that has a 1 for each column of normVStart.
   const CalcColVectorType lastOnes {CalcColVectorType::Constant( normVStart.cols(), 1, 1.0 )};
   // A useful vector that has a 1 for each row of normVStart.
@@ -391,11 +372,8 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
         ++numberOfContributions;
         }
       }
-    // { std::ostringstream mesg; mesg << "SecondPassDistinguishers::numberOfContributions = " << numberOfContributions << std::endl; std::cout << mesg.str() << std::flush; }
     secondPassDistinguisherColors.row( distinguisher ) = cumulative / numberOfContributions;
     }
-
-    // { std::ostringstream mesg; mesg << "secondPassDistinguisherColors = " << secondPassDistinguisherColors << std::endl; std::cout << mesg.str() << std::flush; }
 }
 
 
@@ -444,8 +422,6 @@ int
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, InputPixelType &unstainedPixel, CalcMatrixType &matrixH ) const
 {
-  // { std::ostringstream mesg; mesg << "Entering DistinguishersToNMFSeeds" << std::endl; std::cout << mesg.str() << std::flush; }
-
   matrixH = CalcMatrixType {NumberOfStains, InputImageLength};
 
   const CalcRowVectorType midOnes {CalcRowVectorType::Constant( 1, matrixH.rows(), 1.0 )};
@@ -495,8 +471,6 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::DistinguishersToColors( CalcMatrixType const &distinguishers, InputSizeValueType &unstainedIndex, InputSizeValueType &hematoxylinIndex, InputSizeValueType &eosinIndex ) const
 {
-  // { std::ostringstream mesg; mesg << "Entering DistinguishersToColors" << std::endl; std::cout << mesg.str() << std::flush; }
-
   // Figure out which, distinguishers are unstained (highest
   // brightness), hematoxylin (suppresses red), and eosin (suppresses
   // green).
@@ -524,8 +498,6 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::VirtanenEuclidean( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, const CalcMatrixType &matrixH ) const
 {
-  // { std::ostringstream mesg; mesg << "Entering VirtanenEuclidean" << std::endl; std::cout << mesg.str() << std::flush; }
-
   const auto clip = [] ( const CalcElementType &x )
     {
     return std::max( CalcElementType( 0.0 ), x );
@@ -564,8 +536,6 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   // are set to zero.
   const CalcElementType maxW = matrixW.lpNorm< Eigen::Infinity >() * 15;
   matrixW = ( ( matrixW.array() + maxW ) - maxW ).matrix();
-
-  // { std::ostringstream mesg; mesg << "Number of iterations = " << loopIter << std::endl; std::cout << mesg.str() << std::flush; }
 }
 
 
@@ -577,8 +547,6 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   // If this method is going to get used, we may need to incorporate
   // the Lasso penalty lambda for matrixW and incorporate the Lagrange
   // multipliers to make each row of matrixH have magnitude 1.0.
-
-  // { std::ostringstream mesg; mesg << "Entering VirtanenKLDivergence" << std::endl; std::cout << mesg.str() << std::flush; }
 
   // Apply Virtanen's algorithm to iteratively improve matrixW and
   // matrixH.
@@ -613,8 +581,6 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::NMFsToImage( const CalcMatrixType &inputH, const InputPixelType &inputUnstained, const CalcMatrixType &referH, const InputPixelType &referUnstained, OutputRegionIterator &outputIter ) const
 {
-  // { std::ostringstream mesg; mesg << "Entering NMFsToImage" << std::endl; std::cout << mesg.str() << std::flush; }
-
   // Read in corresponding part of the input region.
   const OutputSizeType size {outputIter.GetRegion().GetSize()};
   const OutputSizeValueType numberOfPixels = std::accumulate( size.begin(), size.end(), 1, std::multiplies< OutputSizeValueType >() );
