@@ -74,6 +74,11 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::BeforeThreadedGenerateData()
 {
+  itkAssertOrThrowMacro( InputImageLength >= 3,
+    "itkStructurePreservingColorNormalizationFilter input images need length (#colors) >= 3." );
+  itkAssertOrThrowMacro( OutputImageLength == InputImageLength,
+    "StructurePreservingColorNormalizationFilter output image needs length (#colors) exactly the same as the input images." );
+
   // Call the superclass' implementation of this method
   Superclass::BeforeThreadedGenerateData();
 
@@ -125,8 +130,8 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 
   if( ( m_inputH * m_referH.transpose() ).determinant() < CalcElementType( 0 ) )
     {
-    // Somehow the hematoxylin and eosin rows got swaped in one of the
-    // input image or reference image.  Flip them in referH to get
+    // Somehow the hematoxylin and eosin rows got swapped in one of
+    // the input image or reference image.  Flip them in referH to get
     // them in synch.
     static_assert( NumberOfStains == 2, "StructurePreservingColorNormalizationFilter current implementation assumes exactly two stains" );
     const CalcMatrixType referHOriginal {m_referH};
@@ -136,9 +141,9 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 
   // Correct for any scaling difference between m_referH and m_inputH.
   const CalcColVectorType lastOnes {CalcColVectorType::Constant( m_referH.cols(), 1, 1.0 )};
-  m_referH = {( ( ( ( m_inputH.array() * m_inputH.array() ).matrix() * lastOnes ).array() + epsilon2 )
-                 / ( ( ( m_referH.array() * m_referH.array() ).matrix() * lastOnes ).array() + epsilon2 ) ).matrix()
-    .unaryExpr( CalcUnaryFunctionPointer( std::sqrt ) ).asDiagonal() * m_referH};
+  m_referH = ( ( ( ( m_inputH.array() * m_inputH.array() ).matrix() * lastOnes ).array() + epsilon2 )
+             / ( ( ( m_referH.array() * m_referH.array() ).matrix() * lastOnes ).array() + epsilon2 ) )
+    .matrix().unaryExpr( CalcUnaryFunctionPointer( std::sqrt ) ).asDiagonal() * m_referH;
 }
 
 

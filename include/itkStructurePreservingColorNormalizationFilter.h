@@ -83,28 +83,36 @@ public:
   itkGetMacro( ColorIndexSuppressedByEosin, int )
   itkSetMacro( ColorIndexSuppressedByEosin, int )
 
-  static constexpr InputSizeValueType InputImageDimension = TInputImage::ImageDimension;
-  static constexpr InputSizeValueType OutputImageDimension = TOutputImage::ImageDimension;
+  static constexpr InputSizeValueType InputImageDimension {TInputImage::ImageDimension};
+  static constexpr InputSizeValueType OutputImageDimension {TOutputImage::ImageDimension};
 
-  // Pixel length (aka number of colors) must be at least 3.  Note
-  // that if the pixel value is, e.g., float or unsigned char, then it
-  // is a single color (e.g., grey) and it will not have "Length"
-  // defined.  In such a case, the compiler will properly give an
-  // error; though it may be hard for the user to understand that the
-  // issue is too few colors.
-  static constexpr InputSizeValueType InputImageLength = InputPixelType::Length;
-  static constexpr InputSizeValueType OutputImageLength = OutputPixelType::Length;
-  static_assert( InputImageLength >= 3,
-    "itkStructurePreservingColorNormalizationFilter input image needs length (#colors) >= 3." );
-  static_assert( OutputImageLength == InputImageLength,
-    "StructurePreservingColorNormalizationFilter output image needs length (#colors) exactly the same as input image." );
+  // A pixel will have a length, which is its number of colors.  The
+  // value of the length is extracted from the InputPixelType (or
+  // OutputPixelType) class, if available, and is otherwise set to 1,
+  // meaning a single color (e.g., gray).  Note that at *runtime* this
+  // filter will complain unless InputImageLength >=3 and
+  // InputImageLength == OutputImageLength.  We do not check at
+  // *compile* time because the code base instantiates instances of
+  // this filter for, e.g., single color images, even though they
+  // should never be never used!!!
+  template< typename, typename = void >
+  struct has_Length : std::false_type {};
+
+  template< typename T >
+  struct has_Length< T, std::void_t< decltype( T::Length ) > > : std::true_type {};
+
+  static constexpr InputSizeValueType InputImageLength =
+    [] { if constexpr ( has_Length< InputPixelType >::value ) return InputPixelType::Length; else return 1; }();
+
+  static constexpr InputSizeValueType OutputImageLength =
+    [] { if constexpr ( has_Length< OutputPixelType >::value ) return OutputPixelType::Length; else return 1; }();
 
   // This algorithm is defined for H&E (Hematoxylin (blue) and Eosin
   // (pink)), which is a total of 2 stains.  However, this approach
   // could in theory work in other circumstances.  In that case it
   // might be better to have NumberOfStains be a template parameter or
   // a setable class member.
-  static constexpr InputSizeValueType NumberOfStains = 2;
+  static constexpr InputSizeValueType NumberOfStains {2};
 
 protected:
   StructurePreservingColorNormalizationFilter();
