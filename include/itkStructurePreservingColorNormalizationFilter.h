@@ -99,7 +99,7 @@ public:
   template<typename... Ts> struct make_void { using type = void; };
   template<typename... Ts> using void_t = typename make_void<Ts...>::type;
 
-  template< typename, typename = void_t < > >
+  template< typename, typename = void_t<> >
   struct has_Length : std::false_type {};
 
   template< typename T >
