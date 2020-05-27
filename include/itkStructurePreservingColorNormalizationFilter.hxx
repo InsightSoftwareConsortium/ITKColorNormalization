@@ -634,7 +634,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     }
 
   // Find the associated matrixW
-  CalcMatrixType matrixW {matrixV.rows(), inputH.cols()};
+  CalcMatrixType matrixW;
   this->VirtanenEuclidean( matrixV, matrixW, inputH );
 
   // Use the matrixW with referH to compute updated values for
@@ -740,7 +740,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::InputImageDimension;
 
 template< typename TInputImage, typename TOutputImage >
-const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::InputSizeValueType
+const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::OutputSizeValueType
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::OutputImageDimension;
 
@@ -750,7 +750,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::InputImageLength;
 
 template< typename TInputImage, typename TOutputImage >
-const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::InputSizeValueType
+const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::OutputSizeValueType
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::OutputImageLength;
 

@@ -84,7 +84,7 @@ public:
   itkSetMacro( ColorIndexSuppressedByEosin, int )
 
   static constexpr InputSizeValueType InputImageDimension {TInputImage::ImageDimension};
-  static constexpr InputSizeValueType OutputImageDimension {TOutputImage::ImageDimension};
+  static constexpr OutputSizeValueType OutputImageDimension {TOutputImage::ImageDimension};
 
   // A pixel will have a length, which is its number of colors.  The
   // value of the length is extracted from the InputPixelType (or
@@ -94,17 +94,21 @@ public:
   // InputImageLength == OutputImageLength.  We do not check at
   // *compile* time because the code base instantiates instances of
   // this filter for, e.g., single color images, even though they
-  // should never be never used!!!
-  template< typename, typename = void >
+  // should never be never used!!!  We don't have C++-17 everywhere,
+  // so define void_t here.
+  template<typename... Ts> struct make_void { using type = void; };
+  template<typename... Ts> using void_t = typename make_void<Ts...>::type;
+
+  template< typename, typename = void_t < > >
   struct has_Length : std::false_type {};
 
   template< typename T >
-  struct has_Length< T, std::void_t< decltype( T::Length ) > > : std::true_type {};
+  struct has_Length< T, void_t< decltype( T::Length ) > > : std::true_type {};
 
   static constexpr InputSizeValueType InputImageLength =
     [] { if constexpr ( has_Length< InputPixelType >::value ) return InputPixelType::Length; else return 1; }();
 
-  static constexpr InputSizeValueType OutputImageLength =
+  static constexpr OutputSizeValueType OutputImageLength =
     [] { if constexpr ( has_Length< OutputPixelType >::value ) return OutputPixelType::Length; else return 1; }();
 
   // This algorithm is defined for H&E (Hematoxylin (blue) and Eosin
