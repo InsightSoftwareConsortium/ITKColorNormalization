@@ -19,6 +19,7 @@
 #ifndef itkStructurePreservingColorNormalizationFilter_h
 #define itkStructurePreservingColorNormalizationFilter_h
 
+#include <type_traits>
 #include "itkImageToImageFilter.h"
 #include "itkImageRegionIterator.h"
 #include "itkImageRegionConstIterator.h"
@@ -94,8 +95,8 @@ public:
   // InputImageLength == OutputImageLength.  We do not check at
   // *compile* time because the code base instantiates instances of
   // this filter for, e.g., single color images, even though they
-  // should never be never used!!!  We don't have C++-17 everywhere,
-  // so define void_t here.
+  // should never be used!!!  We don't have C++-17 everywhere, so
+  // define void_t here.
   template<typename... Ts> struct make_void { using type = void; };
   template<typename... Ts> using void_t = typename make_void<Ts...>::type;
 
