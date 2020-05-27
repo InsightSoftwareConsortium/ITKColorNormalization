@@ -59,7 +59,7 @@ public:
   using OutputSizeValueType = typename OutputSizeType::SizeValueType;
   using OutputPixelType = typename OutputImageType::PixelType;
 
-  using CalcElementType = float;
+  using CalcElementType = double;
   using CalcMatrixType = Eigen::Matrix< CalcElementType, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor >;
   using CalcColVectorType = Eigen::Matrix< CalcElementType, Eigen::Dynamic, 1 >;
   using CalcRowVectorType = Eigen::Matrix< CalcElementType, 1, Eigen::Dynamic >;
@@ -209,9 +209,9 @@ protected:
   InputPixelType m_referUnstainedPixel;
 
 private:
-  static constexpr CalcElementType biggerEpsilon {1e-3}; // a small matrix.array_inf_norm() value
-  static constexpr CalcElementType epsilon {1e-6}; // a very small matrix element
-  static constexpr CalcElementType epsilon2 {epsilon * epsilon}; // a very small squared magnitude for a vector.
+  static constexpr CalcElementType epsilon0 {1e-3}; // a small matrix.array_inf_norm() value
+  static constexpr CalcElementType epsilon1 {1e-6}; // a very small matrix element
+  static constexpr CalcElementType epsilon2 {1e-12}; // a very small squared magnitude for a vector.
   static constexpr InputSizeValueType maxNumberOfIterations {0}; // For Virtanen's non-negative matrix factorization algorithm.
   static constexpr CalcElementType lambda {0.02}; // For Lasso penalty.
 

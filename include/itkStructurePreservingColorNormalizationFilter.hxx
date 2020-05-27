@@ -210,7 +210,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 
   // We do not want trouble with a value near zero (when we take its
   // logarithm) so we add a little to each value now.
-  const CalcElementType nearZero {matrixV.lpNorm< Eigen::Infinity >() * epsilon};
+  const CalcElementType nearZero {matrixV.lpNorm< Eigen::Infinity >() * epsilon1};
   matrixV = ( matrixV.array() + nearZero ).matrix();
 
   // Keep only pixels that are bright enough.
@@ -529,7 +529,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     // matrixH = ( ( ( matrixH.array() * matrixH.array() ).matrix() * lastOnes ).unaryExpr( CalcUnaryFunctionPointer( std::sqrt ) ) ).asDiagonal().inverse() * matrixH;
     if( ( loopIter & 15 ) == 15 )
       {
-      if( ( matrixW - previousMatrixW ).lpNorm< Eigen::Infinity >() < biggerEpsilon )
+      if( ( matrixW - previousMatrixW ).lpNorm< Eigen::Infinity >() < epsilon0 )
         {
         break;
         }
@@ -568,7 +568,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     //             / ( ( lastOnes * ( firstOnes * matrixW ) ).transpose().array() + epsilon2 ) ) ).matrix();
     if( ( loopIter & 15 ) == 15 )
       {
-      if( ( matrixW - previousMatrixW ).lpNorm< Eigen::Infinity >() < biggerEpsilon )
+      if( ( matrixW - previousMatrixW ).lpNorm< Eigen::Infinity >() < epsilon0 )
         break;
       previousMatrixW = matrixW;
       }
@@ -618,7 +618,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     }
 
     {
-    const CalcElementType nearZero {matrixV.lpNorm< Eigen::Infinity >() * epsilon};
+    const CalcElementType nearZero {matrixV.lpNorm< Eigen::Infinity >() * epsilon1};
     matrixV = ( matrixV.array() + nearZero ).matrix();
     }
   const CalcColVectorType firstOnes {CalcColVectorType::Constant( numberOfPixels, 1, 1.0 )};
@@ -629,7 +629,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     };
   matrixV = matrixV.unaryExpr( clip );
     {
-    const CalcElementType nearZero {matrixV.lpNorm< Eigen::Infinity >() * epsilon};
+    const CalcElementType nearZero {matrixV.lpNorm< Eigen::Infinity >() * epsilon1};
     matrixV = ( matrixV.array() + nearZero ).matrix();
     }
 
@@ -762,12 +762,12 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 template< typename TInputImage, typename TOutputImage >
 const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcElementType
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::biggerEpsilon;
+::epsilon0;
 
 template< typename TInputImage, typename TOutputImage >
 const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcElementType
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::epsilon;
+::epsilon1;
 
 template< typename TInputImage, typename TOutputImage >
 const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcElementType
