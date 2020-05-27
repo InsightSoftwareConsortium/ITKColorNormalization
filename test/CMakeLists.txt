@@ -16,6 +16,7 @@ itk_add_test(NAME itkStructurePreservingColorNormalizationFilterTest
     --compare
     ${ITK_TEST_OUTPUT_DIR}/itkStructurePreservingColorNormalizationFilterTestOutput.mha
     DATA{Baseline/itkStructurePreservingColorNormalizationFilterTestOutput.mha}
+    --compareNumberOfPixelsTolerance 2
   itkStructurePreservingColorNormalizationFilterTest
     DATA{Baseline/itkStructurePreservingColorNormalizationFilterTestInput0.png}
     DATA{Baseline/itkStructurePreservingColorNormalizationFilterTestInput1.png}

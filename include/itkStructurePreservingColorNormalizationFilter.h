@@ -59,7 +59,7 @@ public:
   using OutputSizeValueType = typename OutputSizeType::SizeValueType;
   using OutputPixelType = typename OutputImageType::PixelType;
 
-  using CalcElementType = double;
+  using CalcElementType = float;
   using CalcMatrixType = Eigen::Matrix< CalcElementType, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor >;
   using CalcColVectorType = Eigen::Matrix< CalcElementType, Eigen::Dynamic, 1 >;
   using CalcRowVectorType = Eigen::Matrix< CalcElementType, 1, Eigen::Dynamic >;
