@@ -40,8 +40,8 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 {
   Superclass::PrintSelf( os, indent );
 
-  os << indent << "ColorIndexSuppressedByHematoxylin:" << m_ColorIndexSuppressedByHematoxylin << std::endl
-     << indent << "ColorIndexSuppressedByEosin:" << m_ColorIndexSuppressedByEosin << std::endl;
+  os << indent << "ColorIndexSuppressedByHematoxylin: " << m_ColorIndexSuppressedByHematoxylin << std::endl
+     << indent << "ColorIndexSuppressedByEosin: " << m_ColorIndexSuppressedByEosin << std::endl;
 }
 
 
