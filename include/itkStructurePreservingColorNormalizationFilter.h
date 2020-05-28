@@ -87,9 +87,6 @@ public:
   static constexpr InputSizeValueType InputImageDimension {TInputImage::ImageDimension};
   static constexpr OutputSizeValueType OutputImageDimension {TOutputImage::ImageDimension};
 
-  static constexpr InputSizeValueType InputImageLength = InputPixelType::Length;
-  static constexpr OutputSizeValueType OutputImageLength = OutputPixelType::Length;
-
   // This algorithm is defined for H&E ( Hematoxylin ( blue ) and
   // Eosin ( pink ) ), which is a total of 2 stains.  However, this
   // approach could in theory work in other circumstances.  In that
@@ -185,6 +182,12 @@ protected:
   TimeStamp m_referTimeStamp;
   CalcMatrixType m_referH;
   InputPixelType m_referUnstainedPixel;
+
+  // Note that the size of ( aka the number of colors for ) a pixel
+  // may not be set until runtime.
+  InputSizeValueType m_InputImageNumberOfColors;
+  InputSizeValueType m_ReferImageNumberOfColors;
+  OutputSizeValueType m_OutputImageNumberOfColors;
 
 private:
   static constexpr CalcElementType epsilon0 {1e-3}; // a small matrix.array_inf_norm() value

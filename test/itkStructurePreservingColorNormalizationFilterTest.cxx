@@ -59,6 +59,33 @@ public:
 
 int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] )
 {
+  // Compile-time test
+  {
+  using tmpImageType = typename itk::Image< typename itk::RGBPixel< unsigned char > >;
+  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType, tmpImageType >::New();
+  }
+  {
+  using tmpImageType = typename itk::Image< typename itk::RGBPixel< double > >;
+  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType, tmpImageType >::New();
+  }
+  {
+  using tmpImageType = typename itk::Image< typename itk::RGBAPixel< unsigned char > >;
+  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType, tmpImageType >::New();
+  }
+  {
+  using tmpImageType = typename itk::Image< typename itk::RGBAPixel< double > >;
+  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType, tmpImageType >::New();
+  }
+  {
+  using tmpImageType = typename itk::Image< typename itk::VariableLengthVector< unsigned char > >;
+  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType, tmpImageType >::New();
+  }
+  {
+  using tmpImageType = typename itk::Image< typename itk::VariableLengthVector< double > >;
+  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType, tmpImageType >::New();
+  }
+
+  // Run-time test
   if( argc < 4 )
   {
     std::cerr << "Missing parameters." << std::endl;
