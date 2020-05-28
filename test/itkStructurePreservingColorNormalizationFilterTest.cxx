@@ -69,15 +69,7 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
     std::cerr << std::endl;
     return EXIT_FAILURE;
   }
-  // Test the compiler for miscellaneous image types.
-    {
-    using TmpImageTypeD3 = typename itk::Image< double, 3 >;
-    using TmpImageTypeF1 = typename itk::Image< float, 1 >;
-    auto tmpF1F1 = itk::StructurePreservingColorNormalizationFilter< TmpImageTypeF1, TmpImageTypeF1 >::New();
-    auto tmpD3D3 = itk::StructurePreservingColorNormalizationFilter< TmpImageTypeD3, TmpImageTypeD3 >::New();
-    }
 
-  // The runtime test:
   const char * const input0ImageFileName = argv[1];
   const char * const input1ImageFileName = argv[2];
   const char * const outputImageFileName = argv[3];

@@ -205,7 +205,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     InputPixelType pixelValue = inIter.Get();
     for( Eigen::Index color = 0; color < InputImageLength; ++color )
       {
-      matrixV( pixelIndex, color ) = InputPixelHelper::value( pixelValue, color );
+      matrixV( pixelIndex, color ) = pixelValue[color];
       }
     }
 
@@ -370,7 +370,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     const CalcElementType threshold {*std::max_element( Self::cbegin( dotProducts ), Self::cend( dotProducts ) ) * 999 / 1000};
     CalcRowVectorType cumulative {CalcRowVectorType::Constant( 1, normVStart.cols(), 0.0 )};
     InputSizeValueType numberOfContributions {0};
-    for( InputSizeValueType row {0}; row < dotProducts.size(); ++row )
+    for( Eigen::Index row = 0; row < dotProducts.size(); ++row )
       {
       if( dotProducts( row ) >= threshold )
         {
@@ -450,7 +450,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   const CalcRowVectorType unstainedCalcPixel {distinguishers.row( unstainedIndex )};
   for( Eigen::Index color = 0; color < InputImageLength; ++ color )
     {
-    InputPixelHelper::value( unstainedPixel, color ) = unstainedCalcPixel( color ); // return value
+    unstainedPixel[color] = unstainedCalcPixel( color ); // return value
     }
   const CalcRowVectorType logUnstained {unstainedCalcPixel.unaryExpr( CalcUnaryFunctionPointer( std::log ) )};
   const CalcRowVectorType logHematoxylin {logUnstained - distinguishers.row( hematoxylinIndex ).unaryExpr( CalcUnaryFunctionPointer( std::log ) )};
@@ -604,7 +604,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     InputPixelType pixelValue = inputIter.Get();
     for( Eigen::Index color = 0; color < InputImageLength; ++color )
       {
-      matrixV( pixelIndex, color ) = InputPixelHelper::value( pixelValue, color );
+      matrixV( pixelIndex, color ) = pixelValue[color];
       }
     }
 
@@ -614,8 +614,8 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   CalcRowVectorType logReferUnstained {1, InputImageLength};
   for( Eigen::Index color = 0; color < InputImageLength; ++color )
     {
-    logInputUnstained[color] = std::log( CalcElementType( InputPixelHelper::value( inputUnstained, color ) ) );
-    logReferUnstained[color] = std::log( CalcElementType( InputPixelHelper::value( referUnstained, color ) ) );
+    logInputUnstained[color] = std::log( CalcElementType( inputUnstained[color] ) );
+    logReferUnstained[color] = std::log( CalcElementType( referUnstained[color] ) );
     }
 
     {
@@ -651,7 +651,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     {
     for( Eigen::Index color = 0; color < InputImageLength; ++color )
       {
-      OutputPixelHelper::value( pixelValue, color ) = matrixV( pixelIndex, color );
+      pixelValue[color] = matrixV( pixelIndex, color );
       }
     outputIter.Set( pixelValue );
     }
@@ -745,13 +745,6 @@ template< typename TInputImage, typename TOutputImage >
 constexpr typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::OutputSizeValueType
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::OutputImageDimension;
-
-template< typename TInputImage, typename TOutputImage >
-template < typename TSizeValueType, typename TPixelType, typename TEnable >
-constexpr TSizeValueType
-StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::PixelHelper<TSizeValueType, TPixelType, TEnable>
-::Length;
 
 template< typename TInputImage, typename TOutputImage >
 constexpr typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::InputSizeValueType
