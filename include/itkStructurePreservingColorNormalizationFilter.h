@@ -87,16 +87,17 @@ public:
   static constexpr InputSizeValueType InputImageDimension {TInputImage::ImageDimension};
   static constexpr OutputSizeValueType OutputImageDimension {TOutputImage::ImageDimension};
 
-  // A pixel will have a length, which is its number of colors.  The
-  // value of the length is extracted from the InputPixelType (or
+  // A pixel type will have a length, which is its number of colors.
+  // The value of the length is extracted from the InputPixelType (or
   // OutputPixelType) class, if available, and is otherwise set to 1,
-  // meaning a single color (e.g., gray).  Note that at *runtime* this
-  // filter will complain unless InputImageLength >=3 and
-  // InputImageLength == OutputImageLength.  We do not check at
-  // *compile* time because the code base instantiates instances of
-  // this filter for, e.g., single color images, even though they
-  // should never be used!!!  We don't have C++-17 everywhere, so
-  // define void_t here.
+  // meaning a single color (e.g., gray).  Some compilers are unhappy
+  // with defining InputImageLength and OutputImageLength as static
+  // constexpr via a constexpr lambda expression, so we define them as
+  // (non-static) const and set them in the constructor.  We don't
+  // have C++-17 everywhere, so define void_t here via an approach
+  // that is robust for a C++-14 defect.  has_Length is a templated
+  // (empty) struct that determines whether its template argument has
+  // a member called "Length".
   template<typename... Ts> struct make_void { using type = void; };
   template<typename... Ts> using void_t = typename make_void<Ts...>::type;
 
@@ -106,11 +107,8 @@ public:
   template< typename T >
   struct has_Length< T, void_t< decltype( T::Length ) > > : std::true_type {};
 
-  static constexpr InputSizeValueType InputImageLength =
-    [] () constexpr { if constexpr ( has_Length< InputPixelType >::value ) return InputPixelType::Length; else return 1; }();
-
-  static constexpr OutputSizeValueType OutputImageLength =
-    [] () constexpr { if constexpr ( has_Length< OutputPixelType >::value ) return OutputPixelType::Length; else return 1; }();
+  const InputSizeValueType InputImageLength;
+  const OutputSizeValueType OutputImageLength;
 
   // This algorithm is defined for H&E (Hematoxylin (blue) and Eosin
   // (pink)), which is a total of 2 stains.  However, this approach

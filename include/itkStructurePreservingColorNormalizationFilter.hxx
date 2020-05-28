@@ -29,7 +29,9 @@ namespace itk
 template< typename TInputImage, typename TOutputImage >
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::StructurePreservingColorNormalizationFilter()
-  : m_ColorIndexSuppressedByHematoxylin( 0 ), m_ColorIndexSuppressedByEosin( 1 )
+  : m_ColorIndexSuppressedByHematoxylin( 0 ), m_ColorIndexSuppressedByEosin( 1 ),
+    InputImageLength( [] () { if constexpr ( has_Length< InputPixelType >::value ) return InputPixelType::Length; else return 1; }() ),
+    OutputImageLength( [] () { if constexpr ( has_Length< OutputPixelType >::value ) return OutputPixelType::Length; else return 1; }() )
 {}
 
 
@@ -743,16 +745,6 @@ template< typename TInputImage, typename TOutputImage >
 const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::OutputSizeValueType
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::OutputImageDimension;
-
-template< typename TInputImage, typename TOutputImage >
-const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::InputSizeValueType
-StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::InputImageLength;
-
-template< typename TInputImage, typename TOutputImage >
-const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::OutputSizeValueType
-StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::OutputImageLength;
 
 template< typename TInputImage, typename TOutputImage >
 const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::InputSizeValueType
