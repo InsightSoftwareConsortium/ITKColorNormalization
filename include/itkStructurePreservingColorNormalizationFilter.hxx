@@ -53,7 +53,8 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   // Call the superclass' implementation of this method
   Superclass::GenerateInputRequestedRegion();
 
-  // Get pointers to the input (to be normalized) and reference images
+  // Get pointers to the input ( to be normalized ) and reference
+  // images
   InputImageType *inputPtr = const_cast< InputImageType * >( this->GetInput( 0 ) );
   InputImageType *referPtr = const_cast< InputImageType * >( this->GetInput( 1 ) );
 
@@ -75,9 +76,9 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::BeforeThreadedGenerateData()
 {
   itkAssertOrThrowMacro( InputImageLength >= 3,
-    "itkStructurePreservingColorNormalizationFilter input images need length (#colors) >= 3." );
+    "itkStructurePreservingColorNormalizationFilter input images need length ( #colors ) >= 3." );
   itkAssertOrThrowMacro( OutputImageLength == InputImageLength,
-    "StructurePreservingColorNormalizationFilter output image needs length (#colors) exactly the same as the input images." );
+    "StructurePreservingColorNormalizationFilter output image needs length ( #colors ) exactly the same as the input images." );
 
   // Call the superclass' implementation of this method
   Superclass::BeforeThreadedGenerateData();
@@ -172,7 +173,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   // respect to the Vahadane article.  In particular, our W is a tall
   // matrix and our H is a fairly compact matrix.
 
-  const InputSizeType size {inIter.GetRegion().GetSize()};
+  const InputSizeType size = inIter.GetRegion().GetSize();
   const InputSizeValueType numberOfPixels = std::accumulate( size.begin(), size.end(), 1, std::multiplies< InputSizeValueType >() );
 
   // Find distinguishers.  These are essentially the rows of matrixH.
@@ -208,8 +209,8 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
       }
     }
 
-  // We do not want trouble with a value near zero (when we take its
-  // logarithm) so we add a little to each value now.
+  // We do not want trouble with a value near zero ( when we take its
+  // logarithm ) so we add a little to each value now.
   const CalcElementType nearZero {matrixV.lpNorm< Eigen::Infinity >() * epsilon1};
   matrixV = ( matrixV.array() + nearZero ).matrix();
 
@@ -268,8 +269,8 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 {
   const CalcMatrixType normVStart {matrixV};
 
-  // We will store the row (pixel) index of each distinguishing pixel
-  // in firstPassDistinguisherIndices.
+  // We will store the row ( pixel ) index of each distinguishing
+  // pixel in firstPassDistinguisherIndices.
   std::array< int, NumberOfStains+1 > firstPassDistinguisherIndices {-1};
   InputSizeValueType numberOfDistinguishers {0};
   this->FirstPassDistinguishers( normVStart, firstPassDistinguisherIndices, numberOfDistinguishers );
@@ -298,7 +299,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   bool needToRecenterMatrix = true;
   while( numberOfDistinguishers <= NumberOfStains )
     {
-    // Find the next distinguishing row (pixel)
+    // Find the next distinguishing row ( pixel )
     firstPassDistinguisherIndices[numberOfDistinguishers] = this->MatrixToOneDistinguisher( normV, lastOnes );
     // If we found a distinguisher and we have not yet found
     // NumberOfStains+1 of them, then look for the next distinguisher.
@@ -363,8 +364,8 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     // We have sent all distinguishers except self to the origin.
     // Whatever is far from the origin in the same direction as self
     // is a good replacement for self.  We will take an average among
-    // those that are at least 80% as far as the best.  (Note that
-    // self could still be best, but not always.)
+    // those that are at least 80% as far as the best.  ( Note that
+    // self could still be best, but not always. )
     const CalcColVectorType dotProducts {normV * normV.row( firstPassDistinguisherIndices[distinguisher] ).transpose()};
     const CalcElementType threshold {*std::max_element( Self::cbegin( dotProducts ), Self::cend( dotProducts ) ) * 999 / 1000};
     CalcRowVectorType cumulative {CalcRowVectorType::Constant( 1, normVStart.cols(), 0.0 )};
@@ -476,9 +477,9 @@ void
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::DistinguishersToColors( CalcMatrixType const &distinguishers, InputSizeValueType &unstainedIndex, InputSizeValueType &hematoxylinIndex, InputSizeValueType &eosinIndex ) const
 {
-  // Figure out which, distinguishers are unstained (highest
-  // brightness), hematoxylin (suppresses red), and eosin (suppresses
-  // green).
+  // Figure out which, distinguishers are unstained ( highest
+  // brightness ), hematoxylin ( suppresses red ), and eosin (
+  // suppresses green ).
   const CalcColVectorType lastOnes {CalcColVectorType::Constant( distinguishers.cols(), 1, 1.0 )};
   const CalcColVectorType lengths2 {( distinguishers.array() * distinguishers.array() ).matrix() * lastOnes};
   const CalcElementType * const unstainedIterator {std::max_element( Self::cbegin( lengths2 ), Self::cend( lengths2 ) )};
@@ -587,7 +588,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::NMFsToImage( const CalcMatrixType &inputH, const InputPixelType &inputUnstained, const CalcMatrixType &referH, const InputPixelType &referUnstained, OutputRegionIterator &outputIter ) const
 {
   // Read in corresponding part of the input region.
-  const OutputSizeType size {outputIter.GetRegion().GetSize()};
+  const OutputSizeType size = outputIter.GetRegion().GetSize();
   const OutputSizeValueType numberOfPixels = std::accumulate( size.begin(), size.end(), 1, std::multiplies< OutputSizeValueType >() );
   CalcMatrixType matrixV {numberOfPixels, OutputImageLength};
   InputRegionConstIterator inputIter {m_inputPtr, m_inputPtr->GetRequestedRegion()};

@@ -88,12 +88,13 @@ public:
   static constexpr OutputSizeValueType OutputImageDimension {TOutputImage::ImageDimension};
 
   // A pixel type will have a length, which is its number of colors.
-  // The value of the length is extracted from the InputPixelType (or
-  // OutputPixelType) class, if available, and is otherwise set to 1,
-  // meaning a single color (e.g., gray).  Not all compilers are
+  // The value of the length is extracted from the InputPixelType ( or
+  // OutputPixelType ) class, if available, and is otherwise set to 1,
+  // meaning a single color ( e.g., gray ).  Not all compilers are
   // supporting constexpr lambda expresions so we implement via a
   // struct template and its specialization.  Not all compilers are
-  // supporting std::void_t so we define a (C++-14-safe) version here.
+  // supporting std::void_t so we define a ( C++-14-safe ) version
+  // here.
   template<typename... Ts> struct make_void { using type = void; };
   template<typename... Ts> using void_t = typename make_void<Ts...>::type;
 
@@ -101,16 +102,16 @@ public:
   struct PixelHelper
     {
     static constexpr TSizeValueType Length = 1;
-    static TPixelType &value(TPixelType &pixel, unsigned int color) { return pixel; }
-    static const TPixelType &value(const TPixelType &pixel, unsigned int color) { return pixel; }
+    static TPixelType &value( TPixelType &pixel, unsigned int color ) { return pixel; }
+    static const TPixelType &value( const TPixelType &pixel, unsigned int color ) { return pixel; }
     };
 
   template < typename TSizeValueType, typename TPixelType >
   struct PixelHelper< TSizeValueType, TPixelType, void_t< decltype( TPixelType::Length ) > >
     {
     static constexpr TSizeValueType Length = TPixelType::Length;
-    static typename TPixelType::ValueType &value(TPixelType &pixel, unsigned int color) { return pixel[color]; }
-    static const typename TPixelType::ValueType &value(const TPixelType &pixel, unsigned int color) { return pixel[color]; }
+    static typename TPixelType::ValueType &value( TPixelType &pixel, unsigned int color ) { return pixel[color]; }
+    static const typename TPixelType::ValueType &value( const TPixelType &pixel, unsigned int color ) { return pixel[color]; }
     };
 
   using InputPixelHelper = PixelHelper< InputSizeValueType, InputPixelType >;
@@ -119,11 +120,11 @@ public:
   static constexpr InputSizeValueType InputImageLength = InputPixelHelper::Length;
   static constexpr OutputSizeValueType OutputImageLength = OutputPixelHelper::Length;
 
-  // This algorithm is defined for H&E (Hematoxylin (blue) and Eosin
-  // (pink)), which is a total of 2 stains.  However, this approach
-  // could in theory work in other circumstances.  In that case it
-  // might be better to have NumberOfStains be a template parameter or
-  // a setable class member.
+  // This algorithm is defined for H&E ( Hematoxylin ( blue ) and
+  // Eosin ( pink ) ), which is a total of 2 stains.  However, this
+  // approach could in theory work in other circumstances.  In that
+  // case it might be better to have NumberOfStains be a template
+  // parameter or a setable class member.
   static constexpr InputSizeValueType NumberOfStains {2};
 
 protected:
@@ -170,8 +171,8 @@ protected:
   int m_ColorIndexSuppressedByHematoxylin;
   int m_ColorIndexSuppressedByEosin;
 
-  // Our installation of Eigen3 doesn't have iterators.  (They arrive
-  // with Eigen 3.4.)  We define begin, cbegin, end, and cend
+  // Our installation of Eigen3 doesn't have iterators.  ( They arrive
+  // with Eigen 3.4. )  We define begin, cbegin, end, and cend
   // functions here.  A compiler sometimes gets segmentation fault if
   // we use the more restrictive Eigen::Matrix< ... > declarations, so
   // we have the more lax TMatrix declarations available as
