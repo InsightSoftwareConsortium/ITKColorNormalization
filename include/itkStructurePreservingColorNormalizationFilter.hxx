@@ -29,9 +29,7 @@ namespace itk
 template< typename TInputImage, typename TOutputImage >
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::StructurePreservingColorNormalizationFilter()
-  : m_ColorIndexSuppressedByHematoxylin( 0 ), m_ColorIndexSuppressedByEosin( 1 ),
-    InputImageLength( [] () { if constexpr ( has_Length< InputPixelType >::value ) return InputPixelType::Length; else return 1; }() ),
-    OutputImageLength( [] () { if constexpr ( has_Length< OutputPixelType >::value ) return OutputPixelType::Length; else return 1; }() )
+  : m_ColorIndexSuppressedByHematoxylin( 0 ), m_ColorIndexSuppressedByEosin( 1 )
 {}
 
 
@@ -736,43 +734,61 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 // Several members that are declared static constexpr are used by
 // reference, and some compilers will thus demand that they be defined
 // too.  We do that here.
+
 template< typename TInputImage, typename TOutputImage >
-const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::InputSizeValueType
+constexpr typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::InputSizeValueType
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::InputImageDimension;
 
 template< typename TInputImage, typename TOutputImage >
-const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::OutputSizeValueType
+constexpr typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::OutputSizeValueType
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::OutputImageDimension;
 
 template< typename TInputImage, typename TOutputImage >
-const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::InputSizeValueType
+template < typename TSizeValueType, typename TPixelType, typename TEnable >
+constexpr TSizeValueType
+StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
+::StructWithLength<TSizeValueType, TPixelType, TEnable>
+::Length;
+
+template< typename TInputImage, typename TOutputImage >
+constexpr typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::InputSizeValueType
+StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
+::InputImageLength;
+
+template< typename TInputImage, typename TOutputImage >
+constexpr typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::OutputSizeValueType
+StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
+::OutputImageLength;
+
+template< typename TInputImage, typename TOutputImage >
+constexpr typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::InputSizeValueType
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::NumberOfStains;
 
 template< typename TInputImage, typename TOutputImage >
-const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcElementType
+constexpr typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcElementType
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::epsilon0;
 
 template< typename TInputImage, typename TOutputImage >
-const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcElementType
+constexpr typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcElementType
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::epsilon1;
 
 template< typename TInputImage, typename TOutputImage >
-const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcElementType
+constexpr typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcElementType
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::epsilon2;
 
 template< typename TInputImage, typename TOutputImage >
-const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::InputSizeValueType
+constexpr typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::InputSizeValueType
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::maxNumberOfIterations;
 
 template< typename TInputImage, typename TOutputImage >
-const typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcElementType
+constexpr typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::CalcElementType
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::lambda;
 

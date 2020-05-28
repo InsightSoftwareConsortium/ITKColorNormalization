@@ -90,25 +90,23 @@ public:
   // A pixel type will have a length, which is its number of colors.
   // The value of the length is extracted from the InputPixelType (or
   // OutputPixelType) class, if available, and is otherwise set to 1,
-  // meaning a single color (e.g., gray).  Some compilers are unhappy
-  // with defining InputImageLength and OutputImageLength as static
-  // constexpr via a constexpr lambda expression, so we define them as
-  // (non-static) const and set them in the constructor.  We don't
-  // have C++-17 everywhere, so define void_t here via an approach
-  // that is robust for a C++-14 defect.  has_Length is a templated
-  // (empty) struct that determines whether its template argument has
-  // a member called "Length".
+  // meaning a single color (e.g., gray).  Not all compilers are
+  // supporting constexpr lambdas so we implement via a struct
+  // template and its specialization.  Not all compilers are
+  // supporting std::void_t so we define a (C++-14-safe) version here.
   template<typename... Ts> struct make_void { using type = void; };
   template<typename... Ts> using void_t = typename make_void<Ts...>::type;
 
-  template< typename, typename = void_t<> >
-  struct has_Length : std::false_type {};
+  template < typename TSizeValueType, typename TPixelType, typename = void >
+  struct StructWithLength
+    { static constexpr TSizeValueType Length = 1; };
 
-  template< typename T >
-  struct has_Length< T, void_t< decltype( T::Length ) > > : std::true_type {};
+  template < typename TSizeValueType, typename TPixelType >
+  struct StructWithLength< TSizeValueType, TPixelType, void_t< decltype( TPixelType::Length ) > >
+    { static constexpr TSizeValueType Length = TPixelType::Length; };
 
-  const InputSizeValueType InputImageLength;
-  const OutputSizeValueType OutputImageLength;
+  static constexpr InputSizeValueType InputImageLength = StructWithLength< InputSizeValueType, InputPixelType >::Length;
+  static constexpr OutputSizeValueType OutputImageLength = StructWithLength< OutputSizeValueType, OutputPixelType >::Length;
 
   // This algorithm is defined for H&E (Hematoxylin (blue) and Eosin
   // (pink)), which is a total of 2 stains.  However, this approach
