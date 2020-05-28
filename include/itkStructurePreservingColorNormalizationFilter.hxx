@@ -29,7 +29,7 @@ namespace itk
 template< typename TInputImage, typename TOutputImage >
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::StructurePreservingColorNormalizationFilter()
-  :m_ColorIndexSuppressedByHematoxylin( 0 ), m_ColorIndexSuppressedByEosin( 1 )
+  : m_ColorIndexSuppressedByHematoxylin( 0 ), m_ColorIndexSuppressedByEosin( 1 )
 {}
 
 
@@ -202,9 +202,9 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   for( inIter.GoToBegin(); !inIter.IsAtEnd(); ++inIter, ++pixelIndex )
     {
     InputPixelType pixelValue = inIter.Get();
-    for( int color {0}; color < InputImageLength; ++color )
+    for( Eigen::Index color = 0; color < InputImageLength; ++color )
       {
-      matrixV( pixelIndex, color ) = pixelValue[color];
+      matrixV( pixelIndex, color ) = pixelValue[static_cast< int >( color )];
       }
     }
 
@@ -241,7 +241,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   // thresholds.
   const CalcElementType brightnessThreshold {std::min( percentileThreshold, percentageThreshold )};
   InputSizeValueType numberOfRowsToKeep {0};
-  for( InputSizeValueType i {0} ; i < matrixV.rows(); ++i )
+  for( Eigen::Index i = 0 ; i < matrixV.rows(); ++i )
     {
     if( brightnessOriginal( i ) >= brightnessThreshold )
       {
@@ -250,7 +250,7 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     }
   CalcMatrixType brightV {numberOfRowsToKeep, matrixV.cols()};
   numberOfRowsToKeep = 0;
-  for( InputSizeValueType i {0} ; i < matrixV.rows(); ++i )
+  for( Eigen::Index i = 0 ; i < matrixV.rows(); ++i )
     {
     if( brightnessOriginal( i ) >= brightnessThreshold )
       {
@@ -447,9 +447,9 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
     }
 
   const CalcRowVectorType unstainedCalcPixel {distinguishers.row( unstainedIndex )};
-  for( int color {0}; color < InputImageLength; ++ color )
+  for( Eigen::Index color = 0; color < InputImageLength; ++ color )
     {
-    unstainedPixel[color] = unstainedCalcPixel( color ); // return value
+    unstainedPixel[static_cast< int >( color )] = unstainedCalcPixel( color ); // return value
     }
   const CalcRowVectorType logUnstained {unstainedCalcPixel.unaryExpr( CalcUnaryFunctionPointer( std::log ) )};
   const CalcRowVectorType logHematoxylin {logUnstained - distinguishers.row( hematoxylinIndex ).unaryExpr( CalcUnaryFunctionPointer( std::log ) )};
@@ -601,9 +601,9 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
       ++inputIter;
       }
     InputPixelType pixelValue = inputIter.Get();
-    for( int color {0}; color < InputImageLength; ++color )
+    for( Eigen::Index color = 0; color < InputImageLength; ++color )
       {
-      matrixV( pixelIndex, color ) = pixelValue[color];
+      matrixV( pixelIndex, color ) = pixelValue[static_cast< int >( color )];
       }
     }
 
@@ -611,10 +611,10 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   // logarithm.
   CalcRowVectorType logInputUnstained {1, InputImageLength};
   CalcRowVectorType logReferUnstained {1, InputImageLength};
-  for( int color {0}; color < InputImageLength; ++color )
+  for( Eigen::Index color = 0; color < InputImageLength; ++color )
     {
-    logInputUnstained[color] = std::log( CalcElementType( inputUnstained[color] ) );
-    logReferUnstained[color] = std::log( CalcElementType( referUnstained[color] ) );
+    logInputUnstained[color] = std::log( CalcElementType( inputUnstained[static_cast< int >( color )] ) );
+    logReferUnstained[color] = std::log( CalcElementType( referUnstained[static_cast< int >( color )] ) );
     }
 
     {
@@ -648,9 +648,9 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
   outputIter.GoToBegin();
   for( OutputSizeValueType pixelIndex {0}; !outputIter.IsAtEnd(); ++outputIter, ++pixelIndex )
     {
-    for( int color {0}; color < InputImageLength; ++color )
+    for( Eigen::Index color = 0; color < InputImageLength; ++color )
       {
-      pixelValue[color] = matrixV( pixelIndex, color );
+      pixelValue[static_cast< int >( color )] = matrixV( pixelIndex, color );
       }
     outputIter.Set( pixelValue );
     }

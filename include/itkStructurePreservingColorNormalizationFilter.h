@@ -107,10 +107,10 @@ public:
   struct has_Length< T, void_t< decltype( T::Length ) > > : std::true_type {};
 
   static constexpr InputSizeValueType InputImageLength =
-    [] { if constexpr ( has_Length< InputPixelType >::value ) return InputPixelType::Length; else return 1; }();
+    [] () constexpr { if constexpr ( has_Length< InputPixelType >::value ) return InputPixelType::Length; else return 1; }();
 
   static constexpr OutputSizeValueType OutputImageLength =
-    [] { if constexpr ( has_Length< OutputPixelType >::value ) return OutputPixelType::Length; else return 1; }();
+    [] () constexpr { if constexpr ( has_Length< OutputPixelType >::value ) return OutputPixelType::Length; else return 1; }();
 
   // This algorithm is defined for H&E (Hematoxylin (blue) and Eosin
   // (pink)), which is a total of 2 stains.  However, this approach
