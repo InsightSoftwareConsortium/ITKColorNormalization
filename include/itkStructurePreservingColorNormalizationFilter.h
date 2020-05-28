@@ -91,22 +91,33 @@ public:
   // The value of the length is extracted from the InputPixelType (or
   // OutputPixelType) class, if available, and is otherwise set to 1,
   // meaning a single color (e.g., gray).  Not all compilers are
-  // supporting constexpr lambdas so we implement via a struct
-  // template and its specialization.  Not all compilers are
+  // supporting constexpr lambda expresions so we implement via a
+  // struct template and its specialization.  Not all compilers are
   // supporting std::void_t so we define a (C++-14-safe) version here.
   template<typename... Ts> struct make_void { using type = void; };
   template<typename... Ts> using void_t = typename make_void<Ts...>::type;
 
   template < typename TSizeValueType, typename TPixelType, typename = void >
-  struct StructWithLength
-    { static constexpr TSizeValueType Length = 1; };
+  struct PixelHelper
+    {
+    static constexpr TSizeValueType Length = 1;
+    static TPixelType &value(TPixelType &pixel, unsigned int color) { return pixel; }
+    static const TPixelType &value(const TPixelType &pixel, unsigned int color) { return pixel; }
+    };
 
   template < typename TSizeValueType, typename TPixelType >
-  struct StructWithLength< TSizeValueType, TPixelType, void_t< decltype( TPixelType::Length ) > >
-    { static constexpr TSizeValueType Length = TPixelType::Length; };
+  struct PixelHelper< TSizeValueType, TPixelType, void_t< decltype( TPixelType::Length ) > >
+    {
+    static constexpr TSizeValueType Length = TPixelType::Length;
+    static typename TPixelType::ValueType &value(TPixelType &pixel, unsigned int color) { return pixel[color]; }
+    static const typename TPixelType::ValueType &value(const TPixelType &pixel, unsigned int color) { return pixel[color]; }
+    };
 
-  static constexpr InputSizeValueType InputImageLength = StructWithLength< InputSizeValueType, InputPixelType >::Length;
-  static constexpr OutputSizeValueType OutputImageLength = StructWithLength< OutputSizeValueType, OutputPixelType >::Length;
+  using InputPixelHelper = PixelHelper< InputSizeValueType, InputPixelType >;
+  using OutputPixelHelper = PixelHelper< OutputSizeValueType, OutputPixelType >;
+
+  static constexpr InputSizeValueType InputImageLength = InputPixelHelper::Length;
+  static constexpr OutputSizeValueType OutputImageLength = OutputPixelHelper::Length;
 
   // This algorithm is defined for H&E (Hematoxylin (blue) and Eosin
   // (pink)), which is a total of 2 stains.  However, this approach
