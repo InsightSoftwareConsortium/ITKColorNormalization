@@ -39,25 +39,19 @@ namespace itk
  * \ingroup StructurePreservingColorNormalization
  *
  */
-template< typename TInputImage, typename TOutputImage = TInputImage >
-class StructurePreservingColorNormalizationFilter : public ImageToImageFilter< TInputImage, TOutputImage >
+template< typename TImage >
+class StructurePreservingColorNormalizationFilter : public ImageToImageFilter< TImage, TImage >
 {
 public:
   ITK_DISALLOW_COPY_AND_ASSIGN( StructurePreservingColorNormalizationFilter );
 
-  using InputImageType = TInputImage;
-  using InputRegionType = typename InputImageType::RegionType;
-  using InputRegionConstIterator = typename itk::ImageRegionConstIterator< InputImageType >;
-  using InputSizeType = itk::Size< InputImageType::ImageDimension >;
-  using InputSizeValueType = typename InputSizeType::SizeValueType;
-  using InputPixelType = typename InputImageType::PixelType;
-
-  using OutputImageType = TOutputImage;
-  using OutputRegionType = typename OutputImageType::RegionType;
-  using OutputRegionIterator = typename itk::ImageRegionIterator< OutputImageType >;
-  using OutputSizeType = itk::Size< OutputImageType::ImageDimension >;
-  using OutputSizeValueType = typename OutputSizeType::SizeValueType;
-  using OutputPixelType = typename OutputImageType::PixelType;
+  using ImageType = TImage;
+  using RegionType = typename ImageType::RegionType;
+  using RegionConstIterator = typename itk::ImageRegionConstIterator< ImageType >;
+  using RegionIterator = typename itk::ImageRegionIterator< ImageType >;
+  using SizeType = itk::Size< ImageType::ImageDimension >;
+  using SizeValueType = typename SizeType::SizeValueType;
+  using PixelType = typename ImageType::PixelType;
 
   using CalcElementType = float;
   using CalcMatrixType = Eigen::Matrix< CalcElementType, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor >;
@@ -67,8 +61,8 @@ public:
   using CalcUnaryFunctionPointer = CalcElementType ( * ) ( CalcElementType );
 
   /** Standard class typedefs. */
-  using Self = StructurePreservingColorNormalizationFilter< InputImageType, OutputImageType >;
-  using Superclass = ImageToImageFilter< InputImageType, OutputImageType >;
+  using Self = StructurePreservingColorNormalizationFilter< ImageType >;
+  using Superclass = ImageToImageFilter< ImageType, ImageType >;
   using Pointer = SmartPointer< Self >;
   using ConstPointer = SmartPointer< const Self >;
 
@@ -89,7 +83,7 @@ public:
   // approach could in theory work in other circumstances.  In that
   // case it might be better to have NumberOfStains be a template
   // parameter or a setable class member.
-  static constexpr InputSizeValueType NumberOfStains {2};
+  static constexpr SizeValueType NumberOfStains {2};
 
 protected:
   StructurePreservingColorNormalizationFilter();
@@ -101,42 +95,42 @@ protected:
 
   void BeforeThreadedGenerateData() override;
 
-  void DynamicThreadedGenerateData( const OutputRegionType & outputRegion ) override;
+  void DynamicThreadedGenerateData( const RegionType & outputRegion ) override;
 
-  int ImageToNMF( InputRegionConstIterator &iter, CalcMatrixType &matrixH, InputPixelType &pixelUnstained ) const;
+  int ImageToNMF( RegionConstIterator &iter, CalcMatrixType &matrixH, PixelType &pixelUnstained ) const;
 
-  void ImageToMatrix( InputRegionConstIterator &iter, CalcMatrixType &matrixV ) const;
+  void ImageToMatrix( RegionConstIterator &iter, CalcMatrixType &matrixV ) const;
 
   void MatrixToDistinguishers( const CalcMatrixType &matrixV, CalcMatrixType &distinguishers ) const;
 
   void MatrixToBrightPartOfMatrix( CalcMatrixType &matrixV ) const;
 
-  void FirstPassDistinguishers( const CalcMatrixType &normVStart, std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, InputSizeValueType &numberOfDistinguishers ) const;
+  void FirstPassDistinguishers( const CalcMatrixType &normVStart, std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, SizeValueType &numberOfDistinguishers ) const;
 
-  void SecondPassDistinguishers( const CalcMatrixType &normVStart, const std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, const InputSizeValueType numberOfDistinguishers,
+  void SecondPassDistinguishers( const CalcMatrixType &normVStart, const std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, const SizeValueType numberOfDistinguishers,
     CalcMatrixType &secondPassDistinguisherColors ) const;
 
   static int MatrixToOneDistinguisher( const CalcMatrixType &normV, const CalcColVectorType &lastOnes );
 
-  static CalcMatrixType RecenterMatrix( const CalcMatrixType &normV, const CalcColVectorType &firstOnes, const InputSizeValueType row );
+  static CalcMatrixType RecenterMatrix( const CalcMatrixType &normV, const CalcColVectorType &firstOnes, const SizeValueType row );
 
-  static CalcMatrixType ProjectMatrix( const CalcMatrixType &normV, const InputSizeValueType row );
+  static CalcMatrixType ProjectMatrix( const CalcMatrixType &normV, const SizeValueType row );
 
-  int DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, InputPixelType &pixelUnstained, CalcMatrixType &matrixH ) const;
+  int DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, PixelType &pixelUnstained, CalcMatrixType &matrixH ) const;
 
-  void DistinguishersToColors( const CalcMatrixType &distinguishers, InputSizeValueType &unstainedIndex, InputSizeValueType &hematoxylinIndex, InputSizeValueType &eosinIndex ) const;
+  void DistinguishersToColors( const CalcMatrixType &distinguishers, SizeValueType &unstainedIndex, SizeValueType &hematoxylinIndex, SizeValueType &eosinIndex ) const;
 
   void VirtanenEuclidean( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, const CalcMatrixType &matrixH ) const;
 
   void VirtanenKLDivergence( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, const CalcMatrixType &matrixH ) const;
 
-  void NMFsToImage( const CalcMatrixType &inputH, const InputPixelType &inputUnstained, const CalcMatrixType &referH, const InputPixelType &referUnstained, OutputRegionIterator &out ) const;
+  void NMFsToImage( const CalcMatrixType &inputH, const PixelType &inputUnstained, const CalcMatrixType &referH, const PixelType &referUnstained, RegionIterator &out ) const;
 
   int m_ColorIndexSuppressedByHematoxylin;
   int m_ColorIndexSuppressedByEosin;
 
-  // Our installation of Eigen3 doesn't have iterators.  ( They arrive
-  // with Eigen 3.4. )  We define begin, cbegin, end, and cend
+  // Our installation of Eigen3 does not have iterators.  ( They
+  // arrive with Eigen 3.4. )  We define begin, cbegin, end, and cend
   // functions here.  A compiler sometimes gets segmentation fault if
   // we use the more restrictive Eigen::Matrix< ... > declarations, so
   // we have the more lax TMatrix declarations available as
@@ -144,16 +138,16 @@ protected:
 #define STRUCTUREPRESERVINGCOLORNORMALIZATIONFILTER_STRICT_EIGEN3_ITERATORS 0
 #if STRUCTUREPRESERVINGCOLORNORMALIZATIONFILTER_STRICT_EIGEN3_ITERATORS
   template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
-  static _Scalar *begin( typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix );
+  static _Scalar *begin( Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix );
 
   template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
-  static const _Scalar *cbegin( const typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix );
+  static const _Scalar *cbegin( const Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix );
 
   template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
-  static _Scalar *end( typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix );
+  static _Scalar *end( Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix );
 
   template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
-  static const _Scalar *cend( const typename Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix );
+  static const _Scalar *cend( const Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix );
 
 #else
   template< typename TMatrix >
@@ -171,32 +165,46 @@ protected:
 
   // These members are for the purpose of caching results for use the
   // next time the pipeline is run.
-  const InputImageType *m_inputPtr;
+  const ImageType *m_inputPtr;
   TimeStamp m_inputTimeStamp;
   CalcMatrixType m_inputH;
-  InputPixelType m_inputUnstainedPixel;
-  const InputImageType *m_referPtr;
+  PixelType m_inputUnstainedPixel;
+  const ImageType *m_referPtr;
   TimeStamp m_referTimeStamp;
   CalcMatrixType m_referH;
-  InputPixelType m_referUnstainedPixel;
+  PixelType m_referUnstainedPixel;
 
-  // Note that the size of ( aka the number of colors for ) a pixel
-  // may not be set until runtime.
-  Eigen::Index m_InputImageNumberOfColors;
-  Eigen::Index m_ReferImageNumberOfColors;
-  Eigen::Index m_OutputImageNumberOfColors;
+  // The size of (aka the number of colors for) a pixel may not be set
+  // until runtime.  However, if it is set at compile time and is not
+  // at least 3 then refuse to compile.  Note that std::void_t is not
+  // defined for all compilers, so we define our own (C++-14-safe)
+  // version here.
+  template< typename... Ts > struct make_void { using type = void; };
+  template< typename... Ts > using void_t = typename make_void< Ts... >::type;
+  // If the number of colors is not set at compile time:
+  template< typename TSizeValueType, typename TPixelType, typename = void >
+  struct PixelHelper { static constexpr TSizeValueType Length = -1; };
+  // If the number of colors is implicitly set to 1 at compile time:
+  template< typename TSizeValueType, typename TPixelType >
+  struct PixelHelper< TSizeValueType, TPixelType, typename std::enable_if< std::is_arithmetic< TPixelType >::value >::type > { static constexpr TSizeValueType Length = 1; };
+  // If the number of colors is explicitly set at compile time:
+  template< typename TSizeValueType, typename TPixelType >
+  struct PixelHelper< TSizeValueType, TPixelType, void_t< decltype( TPixelType::Length ) > > { static constexpr TSizeValueType Length = TPixelType::Length; };
+  static_assert( 3.0 / PixelHelper< SizeValueType, PixelType >::Length <= 1.0, "Images need at least 3 colors" );
+
+  Eigen::Index m_ImageNumberOfColors;
 
 private:
   static constexpr CalcElementType epsilon0 {1e-3}; // a small matrix.array_inf_norm() value
   static constexpr CalcElementType epsilon1 {1e-6}; // a very small matrix element
   static constexpr CalcElementType epsilon2 {1e-12}; // a very small squared magnitude for a vector.
-  static constexpr InputSizeValueType maxNumberOfIterations {0}; // For Virtanen's non-negative matrix factorization algorithm.
+  static constexpr SizeValueType maxNumberOfIterations {0}; // For Virtanen's non-negative matrix factorization algorithm.
   static constexpr CalcElementType lambda {0.02}; // For Lasso penalty.
 
 
 #ifdef ITK_USE_CONCEPT_CHECKING
   // Add concept checking such as
-  // itkConceptMacro( FloatingPointPixel, ( itk::Concept::IsFloatingPoint< typename InputImageType::PixelType > ) );
+  // itkConceptMacro( FloatingPointPixel, ( itk::Concept::IsFloatingPoint< typename ImageType::PixelType > ) );
 #endif
 };
 

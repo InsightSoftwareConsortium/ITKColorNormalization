@@ -46,7 +46,7 @@ public:
     {
       return;
     }
-    const auto * processObject = dynamic_cast< const itk::ProcessObject *>( caller );
+    const auto * processObject = dynamic_cast< const itk::ProcessObject * >( caller );
     if( !processObject )
     {
       return;
@@ -59,30 +59,42 @@ public:
 
 int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] )
 {
-  // Compile-time test
+  // At compile time, these examples should fail a static_assert and
+  // report "Images need at least 3 colors".
+  #if 0
+  {
+  using tmpImageType = typename itk::Image< float >;
+  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
+  }
+  {
+  using tmpImageType = typename itk::Image< typename itk::FixedArray< unsigned char, 2 > >;
+  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
+  }
+  #endif
+  // These examples should compile.
   {
   using tmpImageType = typename itk::Image< typename itk::RGBPixel< unsigned char > >;
-  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType, tmpImageType >::New();
+  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
   using tmpImageType = typename itk::Image< typename itk::RGBPixel< double > >;
-  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType, tmpImageType >::New();
+  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
   using tmpImageType = typename itk::Image< typename itk::RGBAPixel< unsigned char > >;
-  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType, tmpImageType >::New();
+  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
   using tmpImageType = typename itk::Image< typename itk::RGBAPixel< double > >;
-  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType, tmpImageType >::New();
+  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
   using tmpImageType = typename itk::Image< typename itk::VariableLengthVector< unsigned char > >;
-  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType, tmpImageType >::New();
+  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
   using tmpImageType = typename itk::Image< typename itk::VariableLengthVector< double > >;
-  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType, tmpImageType >::New();
+  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
 
   // Run-time test
@@ -106,7 +118,7 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
   static constexpr unsigned int InputImageLength = PixelType::Length;
   using ImageType = typename itk::Image< PixelType, Dimension >;
 
-  using FilterType = itk::StructurePreservingColorNormalizationFilter< ImageType, ImageType >;
+  using FilterType = itk::StructurePreservingColorNormalizationFilter< ImageType >;
   FilterType::Pointer filter = FilterType::New();
 
   EXERCISE_BASIC_OBJECT_METHODS( filter, StructurePreservingColorNormalizationFilter, ImageToImageFilter );
