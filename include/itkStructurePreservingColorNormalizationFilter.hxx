@@ -749,16 +749,6 @@ StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 template< typename TInputImage, typename TOutputImage >
 constexpr typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::InputSizeValueType
 StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::InputImageDimension;
-
-template< typename TInputImage, typename TOutputImage >
-constexpr typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::OutputSizeValueType
-StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
-::OutputImageDimension;
-
-template< typename TInputImage, typename TOutputImage >
-constexpr typename StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >::InputSizeValueType
-StructurePreservingColorNormalizationFilter< TInputImage, TOutputImage >
 ::NumberOfStains;
 
 template< typename TInputImage, typename TOutputImage >
