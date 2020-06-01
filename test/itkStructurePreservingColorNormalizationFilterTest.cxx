@@ -67,7 +67,7 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
-  using tmpImageType = typename itk::Image< typename itk::FixedArray< unsigned char, 2 > >;
+  using tmpImageType = typename itk::Image< typename itk::Vector< unsigned char, 2 > >;
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   #endif
@@ -81,11 +81,11 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
-  using tmpImageType = typename itk::Image< typename itk::RGBAPixel< unsigned char > >;
+  using tmpImageType = typename itk::Image< typename itk::RGBAPixel< unsigned short int > >;
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
-  using tmpImageType = typename itk::Image< typename itk::RGBAPixel< double > >;
+  using tmpImageType = typename itk::Image< typename itk::RGBAPixel< float > >;
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
