@@ -63,29 +63,29 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
   // report "Images need at least 3 colors".
   #if 0
   {
-  using tmpImageType = typename itk::Image< float >;
+  using tmpImageType = itk::Image< float >;
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
-  using tmpImageType = typename itk::Image< typename itk::Vector< unsigned char, 2 > >;
+  using tmpImageType = itk::Image< itk::Vector< unsigned char, 2 > >;
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   #endif
   // These examples should compile.
   {
-  using tmpImageType = typename itk::Image< typename itk::RGBPixel< unsigned char >, 1 >;
+  using tmpImageType = itk::Image< itk::RGBPixel< unsigned char >, 1 >;
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
-  using tmpImageType = typename itk::Image< typename itk::RGBAPixel< float >, 2 >;
+  using tmpImageType = itk::Image< itk::RGBAPixel< float >, 2 >;
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
-  using tmpImageType = typename itk::Image< typename itk::Vector< unsigned char, 4 >, 3 >;
+  using tmpImageType = itk::Image< itk::Vector< unsigned char, 4 >, 3 >;
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
-  using tmpImageType = typename itk::VectorImage< double, 4 >;
+  using tmpImageType = itk::VectorImage< double, 4 >;
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
 
@@ -106,9 +106,9 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
   const char * const outputImageFileName = argv[3];
 
   constexpr unsigned int Dimension = 2;
-  using PixelType = typename itk::RGBPixel< unsigned char >;
+  using PixelType = itk::RGBPixel< unsigned char >;
   static constexpr unsigned int NumberOfColors = PixelType::Length;
-  using ImageType = typename itk::Image< PixelType, Dimension >;
+  using ImageType = itk::Image< PixelType, Dimension >;
 
   using FilterType = itk::StructurePreservingColorNormalizationFilter< ImageType >;
   FilterType::Pointer filter = FilterType::New();
@@ -180,7 +180,7 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
     image->Allocate();
     image->FillBuffer( white );
 
-    using InputRegionIterator = typename itk::ImageRegionIterator< ImageType >;
+    using InputRegionIterator = itk::ImageRegionIterator< ImageType >;
     InputRegionIterator iter {image, size};
     PixelType tmp;
     for( iter.GoToBegin(); !iter.IsAtEnd(); ++iter )
