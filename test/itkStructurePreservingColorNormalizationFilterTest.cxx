@@ -73,27 +73,19 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
   #endif
   // These examples should compile.
   {
-  using tmpImageType = typename itk::Image< typename itk::RGBPixel< unsigned char > >;
+  using tmpImageType = typename itk::Image< typename itk::RGBPixel< unsigned char >, 1 >;
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
-  using tmpImageType = typename itk::Image< typename itk::RGBPixel< double > >;
+  using tmpImageType = typename itk::Image< typename itk::RGBAPixel< float >, 2 >;
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
-  using tmpImageType = typename itk::Image< typename itk::RGBAPixel< unsigned short int > >;
+  using tmpImageType = typename itk::Image< typename itk::Vector< unsigned char, 4 >, 3 >;
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
-  using tmpImageType = typename itk::Image< typename itk::RGBAPixel< float > >;
-  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
-  }
-  {
-  using tmpImageType = typename itk::Image< typename itk::Vector< unsigned char, 4 > >;
-  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
-  }
-  {
-  using tmpImageType = typename itk::Image< typename itk::Vector< double, 5 > >;
+  using tmpImageType = typename itk::VectorImage< double, 4 >;
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
 
