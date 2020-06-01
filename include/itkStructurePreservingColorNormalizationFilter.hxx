@@ -161,11 +161,6 @@ StructurePreservingColorNormalizationFilter< TImage >
   itkAssertOrThrowMacro( outputPtr != nullptr, "An output image needs to be supplied" )
   RegionIterator outputIter {outputPtr, outputRegion};
 
-  outputIter.GoToBegin();
-  // Has this been set for VariableLengthVector pixels by this time?!!!
-  itkAssertOrThrowMacro( m_ImageNumberOfColors == outputIter.Get().Size(),
-    "The output image needs its number of colors to be exactly the same as the reference image" );
-
   this->NMFsToImage( m_inputH, m_inputUnstainedPixel, m_referH, m_referUnstainedPixel, outputIter );
 }
 
@@ -654,7 +649,7 @@ StructurePreservingColorNormalizationFilter< TImage >
   // Convert matrixV using exponentiation and the referUnstained pixel.
   matrixV = ( ( firstOnes * logReferUnstained ) - matrixV ).unaryExpr( CalcUnaryFunctionPointer( std::exp ) );
 
-  PixelType pixelValue;
+  PixelType pixelValue = PixelHelper< SizeValueType, PixelType >::pixelFactory( m_ImageNumberOfColors );
   outputIter.GoToBegin();
   for( SizeValueType pixelIndex {0}; !outputIter.IsAtEnd(); ++outputIter, ++pixelIndex )
     {

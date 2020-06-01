@@ -178,19 +178,32 @@ protected:
   // until runtime.  However, if it is set at compile time and is not
   // at least 3 then refuse to compile.  Note that std::void_t is not
   // defined for all compilers, so we define our own (C++-14-safe)
-  // version here.
+  // version here.  We have added support for VariableLengthVector
+  // which makes struct PixelHelper more than itkPixelTraits.
   template< typename... Ts > struct make_void { using type = void; };
   template< typename... Ts > using void_t = typename make_void< Ts... >::type;
   // If the number of colors is not set at compile time:
   template< typename TSizeValueType, typename TPixelType, typename = void >
-  struct PixelHelper { static constexpr TSizeValueType Length = -1; };
+  struct PixelHelper
+    {
+    static constexpr TSizeValueType Length = -1;
+    static TPixelType pixelFactory( unsigned size ) { return TPixelType( size ); }
+    };
   // If the number of colors is implicitly set to 1 at compile time:
   template< typename TSizeValueType, typename TPixelType >
-  struct PixelHelper< TSizeValueType, TPixelType, typename std::enable_if< std::is_arithmetic< TPixelType >::value >::type > { static constexpr TSizeValueType Length = 1; };
+  struct PixelHelper< TSizeValueType, TPixelType, typename std::enable_if< std::is_arithmetic< TPixelType >::value >::type >
+    {
+    static constexpr TSizeValueType Length = 1;
+    static TPixelType pixelFactory( unsigned size ) { return TPixelType(); }
+    };
   // If the number of colors is explicitly set at compile time:
   template< typename TSizeValueType, typename TPixelType >
-  struct PixelHelper< TSizeValueType, TPixelType, void_t< decltype( TPixelType::Length ) > > { static constexpr TSizeValueType Length = TPixelType::Length; };
-  static_assert( 3.0 / PixelHelper< SizeValueType, PixelType >::Length <= 1.0, "Images need at least 3 colors" );
+  struct PixelHelper< TSizeValueType, TPixelType, void_t< decltype( TPixelType::Length ) > >
+    {
+    static constexpr TSizeValueType Length = TPixelType::Length;
+    static TPixelType pixelFactory( unsigned size ) { return TPixelType(); }
+    };
+  static_assert( 2 / PixelHelper< SizeValueType, PixelType >::Length < 1, "Images need at least 3 colors" );
 
   Eigen::Index m_ImageNumberOfColors;
 

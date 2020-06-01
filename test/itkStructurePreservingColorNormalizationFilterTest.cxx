@@ -89,11 +89,11 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
-  using tmpImageType = typename itk::Image< typename itk::VariableLengthVector< unsigned char > >;
+  using tmpImageType = typename itk::Image< typename itk::Vector< unsigned char, 4 > >;
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
   {
-  using tmpImageType = typename itk::Image< typename itk::VariableLengthVector< double > >;
+  using tmpImageType = typename itk::Image< typename itk::Vector< double, 5 > >;
   auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
   }
 
@@ -115,7 +115,7 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
 
   constexpr unsigned int Dimension = 2;
   using PixelType = typename itk::RGBPixel< unsigned char >;
-  static constexpr unsigned int InputImageLength = PixelType::Length;
+  static constexpr unsigned int NumberOfColors = PixelType::Length;
   using ImageType = typename itk::Image< PixelType, Dimension >;
 
   using FilterType = itk::StructurePreservingColorNormalizationFilter< ImageType >;
@@ -169,10 +169,10 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
   using CalcElementType = typename FilterType::CalcElementType;
   using CalcRowVectorType = typename FilterType::CalcRowVectorType;
   using CalcUnaryFunctionPointer = typename FilterType::CalcUnaryFunctionPointer;
-  CalcRowVectorType logWhite {CalcRowVectorType::Constant( 1, InputImageLength, 1.0 )};
-  CalcRowVectorType logHematoxylin {CalcRowVectorType::Constant( 1, InputImageLength, 1.0 )};
-  CalcRowVectorType logEosin {CalcRowVectorType::Constant( 1, InputImageLength, 1.0 )};
-  for( int color {0}; color < InputImageLength; ++color )
+  CalcRowVectorType logWhite {CalcRowVectorType::Constant( 1, NumberOfColors, 1.0 )};
+  CalcRowVectorType logHematoxylin {CalcRowVectorType::Constant( 1, NumberOfColors, 1.0 )};
+  CalcRowVectorType logEosin {CalcRowVectorType::Constant( 1, NumberOfColors, 1.0 )};
+  for( int color {0}; color < NumberOfColors; ++color )
     {
     logWhite( color ) = std::log( static_cast< CalcElementType >( white[color] ) );
     logHematoxylin( color ) = logWhite( color ) - std::log( static_cast< CalcElementType >( hematoxylin[color] ) );
@@ -199,7 +199,7 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
       const CalcRowVectorType randomPixelValue
         {( logWhite - ( hematoxylinContribution * logHematoxylin ) - ( eosinContribution * logEosin ) ).unaryExpr( CalcUnaryFunctionPointer( std::exp ) ).array() + noise};
       // std::cout << "hematoxylinContribution = " << hematoxylinContribution << ", eosinContribution = " << eosinContribution << ", randomPixelValue = " << randomPixelValue << std::endl;
-      for( int color {0}; color < InputImageLength; ++color )
+      for( int color {0}; color < NumberOfColors; ++color )
         {
         tmp[color] = std::max( CalcElementType( 0.0 ), std::min( CalcElementType( 255.0 ), randomPixelValue( color ) ) );
         }
