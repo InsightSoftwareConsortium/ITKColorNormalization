@@ -59,34 +59,26 @@ public:
 
 int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] )
 {
-  // At compile time, these examples should fail a static_assert and
-  // report "Images need at least 3 colors".
-  #if 0
   {
-  using tmpImageType = itk::Image< float >;
-  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
-  }
-  {
-  using tmpImageType = itk::Image< itk::Vector< unsigned char, 2 > >;
-  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
-  }
-  #endif
-  // These examples should compile.
-  {
-  using tmpImageType = itk::Image< itk::RGBPixel< unsigned char >, 1 >;
-  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
-  }
-  {
-  using tmpImageType = itk::Image< itk::RGBAPixel< float >, 2 >;
-  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
-  }
-  {
-  using tmpImageType = itk::Image< itk::Vector< unsigned char, 4 >, 3 >;
-  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
-  }
-  {
-  using tmpImageType = itk::VectorImage< double, 4 >;
-  auto tmp = itk::StructurePreservingColorNormalizationFilter< tmpImageType >::New();
+    // At compile time, these examples should fail a static_assert and
+    // report "Images need at least 3 colors".
+#if 0
+    using TypeIF2 = itk::Image< float >;
+    auto tmpIF2 = itk::StructurePreservingColorNormalizationFilter< TypeIF2 >::New();
+    using TypeIVUC22 = itk::Image< itk::Vector< unsigned char, 2 > >;
+    auto tmpIVUC22 = itk::StructurePreservingColorNormalizationFilter< TypeIVUC22 >::New();
+#endif
+    // These examples should compile.
+#if 1
+    using TypeIRGBUC1 = itk::Image< itk::RGBPixel< unsigned char >, 1 >;
+    auto tmpIRGBUC1 = itk::StructurePreservingColorNormalizationFilter< TypeIRGBUC1 >::New();
+    using TypeIRGBAF2 = itk::Image< itk::RGBAPixel< float >, 2 >;
+    auto tmpIRGBAF2 = itk::StructurePreservingColorNormalizationFilter< TypeIRGBAF2 >::New();
+    using TypeIVUC43 = itk::Image< itk::Vector< unsigned char, 4 >, 3 >;
+    auto tmpIVUC43 = itk::StructurePreservingColorNormalizationFilter< TypeIVUC43 >::New();
+    using TypeVID4 = itk::VectorImage< double, 4 >;
+    auto tmpVID4 = itk::StructurePreservingColorNormalizationFilter< TypeVID4 >::New();
+#endif
   }
 
   // Run-time test
@@ -106,9 +98,16 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
   const char * const outputImageFileName = argv[3];
 
   constexpr unsigned int Dimension = 2;
+#if 1
   using PixelType = itk::RGBPixel< unsigned char >;
   static constexpr unsigned int NumberOfColors = PixelType::Length;
-  using ImageType = itk::Image< PixelType, Dimension >;
+  using ImageType = itk::Image< PixelType, Dimension >; // IRGBUC2
+#else
+  // Debug this case!!!
+  using ImageType = itk::VectorImage< unsigned char, 2 >; // VIUC2
+  static constexpr unsigned int NumberOfColors = 4;
+  using PixelType = typename ImageType::PixelType;
+#endif
 
   using FilterType = itk::StructurePreservingColorNormalizationFilter< ImageType >;
   FilterType::Pointer filter = FilterType::New();

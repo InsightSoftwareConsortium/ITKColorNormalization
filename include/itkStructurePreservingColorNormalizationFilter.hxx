@@ -96,6 +96,7 @@ StructurePreservingColorNormalizationFilter< TImage >
     inputIter.GoToBegin();
     m_ImageNumberOfColors = inputIter.Get().Size();
     itkAssertOrThrowMacro( m_ImageNumberOfColors >= 3, "Images need at least 3 colors but the input image to be normalized does not" );
+    m_inputUnstainedPixel = PixelHelper< SizeValueType, PixelType >::pixelFactory( m_ImageNumberOfColors );
 
     if( this->ImageToNMF( inputIter, m_inputH, m_inputUnstainedPixel ) == 0 )
       {
@@ -114,9 +115,9 @@ StructurePreservingColorNormalizationFilter< TImage >
   if( referPtr != nullptr && ( referPtr != m_referPtr || referPtr->GetTimeStamp() != m_referTimeStamp ) )
     {
     RegionConstIterator referIter {referPtr, referPtr->GetRequestedRegion()};
-    referIter.GoToBegin();
-    itkAssertOrThrowMacro( m_ImageNumberOfColors == referIter.Get().Size(),
+    itkAssertOrThrowMacro( ( referIter.GoToBegin(), m_ImageNumberOfColors == referIter.Get().Size() ),
       "The reference image needs its number of colors to be exactly the same as the input image to be normalized" );
+    m_referUnstainedPixel = PixelHelper< SizeValueType, PixelType >::pixelFactory( m_ImageNumberOfColors );
     if( this->ImageToNMF( referIter, m_referH, m_referUnstainedPixel ) == 0 )
       {
       m_referPtr = referPtr;
