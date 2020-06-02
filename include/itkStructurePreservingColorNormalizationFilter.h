@@ -212,7 +212,7 @@ private:
   static constexpr CalcElementType epsilon1 {1e-6}; // a very small matrix element
   static constexpr CalcElementType epsilon2 {1e-12}; // a very small squared magnitude for a vector.
   static constexpr SizeValueType maxNumberOfIterations {0}; // For Virtanen's non-negative matrix factorization algorithm.
-  static constexpr CalcElementType lambda {0.02}; // For Lasso penalty.
+  static constexpr CalcElementType lambda {0.00}; // For Lasso penalty.
 
 
 #ifdef ITK_USE_CONCEPT_CHECKING
