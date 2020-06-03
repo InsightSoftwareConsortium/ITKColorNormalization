@@ -29,7 +29,8 @@ namespace itk
 template< typename TImage >
 StructurePreservingColorNormalizationFilter< TImage >
 ::StructurePreservingColorNormalizationFilter()
-  : m_ColorIndexSuppressedByHematoxylin( 0 ), m_ColorIndexSuppressedByEosin( 1 )
+  : m_ColorIndexSuppressedByHematoxylin( Self::PixelHelper< SizeValueType, PixelType >::ColorIndexSuppressedByHematoxylin ),
+    m_ColorIndexSuppressedByEosin( Self::PixelHelper< SizeValueType, PixelType >::ColorIndexSuppressedByEosin )
 {}
 
 
@@ -78,6 +79,26 @@ StructurePreservingColorNormalizationFilter< TImage >
   // Call the superclass' implementation of this method
   Superclass::BeforeThreadedGenerateData();
 
+  // this->Modified() is called if a itkSetMacro is invoked, but not
+  // if a this->GetInput() value is changed, right?!!!
+  if( this->GetMTime() > m_ParametersMTime )
+    {
+    // m_ColorIndexSuppressedByHematoxylin and/or
+    // m_ColorIndexSuppressedByEosin has changed since we built the
+    // cache, so clear the cache.  The empty cache is current as of
+    // the most recent modification.
+    m_inputPtr = nullptr;
+    m_referPtr = nullptr;
+    m_ParametersMTime = this->GetMTime();
+    }
+
+  // If the pixel type is RGBPixel<T> or RGBAPixel<T> then
+  // Self::PixelHelper has already provided values for
+  // m_ColorIndexSuppressedByHematoxylin and
+  // m_ColorIndexSuppressedByEosin.  Otherwise, the user must set them
+  // directly.  Check that they have been set.
+  itkAssertOrThrowMacro( m_ColorIndexSuppressedByHematoxylin >= 0 && m_ColorIndexSuppressedByEosin >= 0, "Need to first set ColorIndexSuppressedByHematoxylin and ColorIndexSuppressedByEosin" );
+
   // Find input and refer and make iterators for them.
   const ImageType * const inputPtr = this->GetInput( 0 ); // image to be normalized
   const ImageType * const referPtr = this->GetInput( 1 ); // reference image
@@ -96,7 +117,7 @@ StructurePreservingColorNormalizationFilter< TImage >
     inputIter.GoToBegin();
     m_ImageNumberOfColors = inputIter.Get().Size();
     itkAssertOrThrowMacro( m_ImageNumberOfColors >= 3, "Images need at least 3 colors but the input image to be normalized does not" );
-    m_inputUnstainedPixel = PixelHelper< SizeValueType, PixelType >::pixelFactory( m_ImageNumberOfColors );
+    m_inputUnstainedPixel = Self::PixelHelper< SizeValueType, PixelType >::pixelInstance( m_ImageNumberOfColors );
 
     if( this->ImageToNMF( inputIter, m_inputH, m_inputUnstainedPixel ) == 0 )
       {
@@ -117,7 +138,7 @@ StructurePreservingColorNormalizationFilter< TImage >
     RegionConstIterator referIter {referPtr, referPtr->GetRequestedRegion()};
     itkAssertOrThrowMacro( ( referIter.GoToBegin(), m_ImageNumberOfColors == referIter.Get().Size() ),
       "The reference image needs its number of colors to be exactly the same as the input image to be normalized" );
-    m_referUnstainedPixel = PixelHelper< SizeValueType, PixelType >::pixelFactory( m_ImageNumberOfColors );
+    m_referUnstainedPixel = Self::PixelHelper< SizeValueType, PixelType >::pixelInstance( m_ImageNumberOfColors );
     if( this->ImageToNMF( referIter, m_referH, m_referUnstainedPixel ) == 0 )
       {
       m_referPtr = referPtr;
@@ -650,7 +671,7 @@ StructurePreservingColorNormalizationFilter< TImage >
   // Convert matrixV using exponentiation and the referUnstained pixel.
   matrixV = ( ( firstOnes * logReferUnstained ) - matrixV ).unaryExpr( CalcUnaryFunctionPointer( std::exp ) );
 
-  PixelType pixelValue = PixelHelper< SizeValueType, PixelType >::pixelFactory( m_ImageNumberOfColors );
+  PixelType pixelValue = Self::PixelHelper< SizeValueType, PixelType >::pixelInstance( m_ImageNumberOfColors );
   outputIter.GoToBegin();
   for( SizeValueType pixelIndex {0}; !outputIter.IsAtEnd(); ++outputIter, ++pixelIndex )
     {

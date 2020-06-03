@@ -20,6 +20,10 @@
 #define itkStructurePreservingColorNormalizationFilter_h
 
 #include <type_traits>
+#include "itkRGBPixel.h"
+#include "itkRGBAPixel.h"
+#include "itkVector.h"
+#include "itkCovariantVector.h"
 #include "itkImageToImageFilter.h"
 #include "itkImageRegionIterator.h"
 #include "itkImageRegionConstIterator.h"
@@ -72,11 +76,11 @@ public:
   /** Standard New macro. */
   itkNewMacro( Self );
 
-  itkGetMacro( ColorIndexSuppressedByHematoxylin, int )
-  itkSetMacro( ColorIndexSuppressedByHematoxylin, int )
+  itkGetMacro( ColorIndexSuppressedByHematoxylin, Eigen::Index )
+  itkSetMacro( ColorIndexSuppressedByHematoxylin, Eigen::Index )
 
-  itkGetMacro( ColorIndexSuppressedByEosin, int )
-  itkSetMacro( ColorIndexSuppressedByEosin, int )
+  itkGetMacro( ColorIndexSuppressedByEosin, Eigen::Index )
+  itkSetMacro( ColorIndexSuppressedByEosin, Eigen::Index )
 
   // This algorithm is defined for H&E ( Hematoxylin ( blue ) and
   // Eosin ( pink ) ), which is a total of 2 stains.  However, this
@@ -126,9 +130,6 @@ protected:
 
   void NMFsToImage( const CalcMatrixType &inputH, const PixelType &inputUnstained, const CalcMatrixType &referH, const PixelType &referUnstained, RegionIterator &out ) const;
 
-  int m_ColorIndexSuppressedByHematoxylin;
-  int m_ColorIndexSuppressedByEosin;
-
   // Our installation of Eigen3 does not have iterators.  ( They
   // arrive with Eigen 3.4. )  We define begin, cbegin, end, and cend
   // functions here.  A compiler sometimes gets segmentation fault if
@@ -165,6 +166,7 @@ protected:
 
   // These members are for the purpose of caching results for use the
   // next time the pipeline is run.
+  itk::ModifiedTimeType m_ParametersMTime;
   const ImageType *m_inputPtr;
   TimeStamp m_inputTimeStamp;
   CalcMatrixType m_inputH;
@@ -173,6 +175,10 @@ protected:
   TimeStamp m_referTimeStamp;
   CalcMatrixType m_referH;
   PixelType m_referUnstainedPixel;
+
+  Eigen::Index m_ImageNumberOfColors;
+  Eigen::Index m_ColorIndexSuppressedByHematoxylin;
+  Eigen::Index m_ColorIndexSuppressedByEosin;
 
   // The size of (aka the number of colors for) a pixel may not be set
   // until runtime.  However, if it is set at compile time and is not
@@ -186,26 +192,63 @@ protected:
   template< typename TSizeValueType, typename TPixelType, typename = void >
   struct PixelHelper
     {
+    using PixelType = TPixelType;
     static constexpr TSizeValueType Length = -1;
-    static TPixelType pixelFactory( unsigned size ) { return TPixelType( size ); }
+    static constexpr Eigen::Index ColorIndexSuppressedByHematoxylin = -1;
+    static constexpr Eigen::Index ColorIndexSuppressedByEosin = -1;
+    static PixelType pixelInstance( unsigned size ) { return PixelType {size}; }
     };
   // If the number of colors is implicitly set to 1 at compile time:
   template< typename TSizeValueType, typename TPixelType >
   struct PixelHelper< TSizeValueType, TPixelType, typename std::enable_if< std::is_arithmetic< TPixelType >::value >::type >
     {
+    using PixelType = TPixelType;
     static constexpr TSizeValueType Length = 1;
-    static TPixelType pixelFactory( unsigned size ) { return TPixelType(); }
+    static constexpr Eigen::Index ColorIndexSuppressedByHematoxylin = -1;
+    static constexpr Eigen::Index ColorIndexSuppressedByEosin = -1;
+    static PixelType pixelInstance( unsigned size ) { return PixelType {}; }
     };
-  // If the number of colors is explicitly set at compile time:
-  template< typename TSizeValueType, typename TPixelType >
-  struct PixelHelper< TSizeValueType, TPixelType, void_t< decltype( TPixelType::Length ) > >
+  // If the pixel type is RGBPixel
+  template< typename TSizeValueType, typename TScalar>
+  struct PixelHelper< TSizeValueType, itk::RGBPixel< TScalar >, void >
     {
-    static constexpr TSizeValueType Length = TPixelType::Length;
-    static TPixelType pixelFactory( unsigned size ) { return TPixelType(); }
+    using PixelType = itk::RGBPixel< TScalar >;
+    static constexpr TSizeValueType Length = PixelType::Length;
+    static constexpr Eigen::Index ColorIndexSuppressedByHematoxylin = 0;
+    static constexpr Eigen::Index ColorIndexSuppressedByEosin = 1;
+    static PixelType pixelInstance( unsigned size ) { return PixelType {}; }
+    };
+  // If the pixel type is RGBAPixel
+  template< typename TSizeValueType, typename TScalar>
+  struct PixelHelper< TSizeValueType, itk::RGBAPixel< TScalar >, void >
+    {
+    using PixelType = itk::RGBAPixel< TScalar >;
+    static constexpr TSizeValueType Length = PixelType::Length;
+    static constexpr Eigen::Index ColorIndexSuppressedByHematoxylin = 0;
+    static constexpr Eigen::Index ColorIndexSuppressedByEosin = 1;
+    static PixelType pixelInstance( unsigned size ) { return PixelType {}; }
+    };
+  // If the pixel type is Vector
+  template< typename TSizeValueType, typename TScalar, unsigned int NVectorDimension >
+  struct PixelHelper< TSizeValueType, itk::Vector< TScalar, NVectorDimension >, void >
+    {
+    using PixelType = itk::Vector< TScalar, NVectorDimension >;
+    static constexpr TSizeValueType Length = PixelType::Length;
+    static constexpr Eigen::Index ColorIndexSuppressedByHematoxylin = -1;
+    static constexpr Eigen::Index ColorIndexSuppressedByEosin = -1;
+    static PixelType pixelInstance( unsigned size ) { return PixelType {}; }
+    };
+  // If the pixel type is CovariantVector
+  template< typename TSizeValueType, typename TScalar, unsigned int NVectorDimension >
+  struct PixelHelper< TSizeValueType, itk::CovariantVector< TScalar, NVectorDimension >, void >
+    {
+    using PixelType = itk::CovariantVector< TScalar, NVectorDimension >;
+    static constexpr TSizeValueType Length = PixelType::Length;
+    static constexpr Eigen::Index ColorIndexSuppressedByHematoxylin = -1;
+    static constexpr Eigen::Index ColorIndexSuppressedByEosin = -1;
+    static PixelType pixelInstance( unsigned size ) { return PixelType {}; }
     };
   static_assert( 2 / PixelHelper< SizeValueType, PixelType >::Length < 1, "Images need at least 3 colors" );
-
-  Eigen::Index m_ImageNumberOfColors;
 
 private:
   static constexpr CalcElementType epsilon0 {1e-3}; // a small matrix.array_inf_norm() value

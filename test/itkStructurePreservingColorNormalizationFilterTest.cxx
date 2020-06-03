@@ -65,17 +65,19 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
 #if 0
     using TypeIF2 = itk::Image< float >;
     auto tmpIF2 = itk::StructurePreservingColorNormalizationFilter< TypeIF2 >::New();
-    using TypeIVUC22 = itk::Image< itk::Vector< unsigned char, 2 > >;
-    auto tmpIVUC22 = itk::StructurePreservingColorNormalizationFilter< TypeIVUC22 >::New();
+    using TypeIVD22 = itk::Image< itk::Vector< double, 2 > >;
+    auto tmpIVD22 = itk::StructurePreservingColorNormalizationFilter< TypeIVD22 >::New();
 #endif
     // These examples should compile.
 #if 1
     using TypeIRGBUC1 = itk::Image< itk::RGBPixel< unsigned char >, 1 >;
     auto tmpIRGBUC1 = itk::StructurePreservingColorNormalizationFilter< TypeIRGBUC1 >::New();
-    using TypeIRGBAF2 = itk::Image< itk::RGBAPixel< float >, 2 >;
-    auto tmpIRGBAF2 = itk::StructurePreservingColorNormalizationFilter< TypeIRGBAF2 >::New();
-    using TypeIVUC43 = itk::Image< itk::Vector< unsigned char, 4 >, 3 >;
-    auto tmpIVUC43 = itk::StructurePreservingColorNormalizationFilter< TypeIVUC43 >::New();
+    using TypeIRGBAUS2 = itk::Image< itk::RGBAPixel< unsigned short >, 2 >;
+    auto tmpIRGBAUS2 = itk::StructurePreservingColorNormalizationFilter< TypeIRGBAUS2 >::New();
+    using TypeIVF43 = itk::Image< itk::Vector< float, 4 >, 3 >;
+    auto tmpIVF43 = itk::StructurePreservingColorNormalizationFilter< TypeIVF43 >::New();
+    using TypeICVF34 = itk::Image< itk::CovariantVector< float, 3 >, 4 >;
+    auto tmpICVF34 = itk::StructurePreservingColorNormalizationFilter< TypeICVF34 >::New();
     using TypeVID4 = itk::VectorImage< double, 4 >;
     auto tmpVID4 = itk::StructurePreservingColorNormalizationFilter< TypeVID4 >::New();
 #endif
