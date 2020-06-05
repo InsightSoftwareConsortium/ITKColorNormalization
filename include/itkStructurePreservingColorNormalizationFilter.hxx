@@ -54,8 +54,8 @@ StructurePreservingColorNormalizationFilter< TImage >
   // Call the superclass' implementation of this method
   Superclass::GenerateInputRequestedRegion();
 
-  // Get pointers to the input ( to be normalized ) and reference
-  // images
+  // Get pointers to the input image ( to be normalized ) and
+  // reference image.
   ImageType *inputPtr = const_cast< ImageType * >( this->GetInput( 0 ) );
   ImageType *referPtr = const_cast< ImageType * >( this->GetInput( 1 ) );
 
@@ -80,7 +80,9 @@ StructurePreservingColorNormalizationFilter< TImage >
   Superclass::BeforeThreadedGenerateData();
 
   // this->Modified() is called if a itkSetMacro is invoked, but not
-  // if a this->GetInput() value is changed, right?!!!
+  // if a this->GetInput() value is changed, right?!!!  Otherwise, we
+  // need to implement our own set methods to update a separate MTime
+  // variable.
   if( this->GetMTime() > m_ParametersMTime )
     {
     // m_ColorIndexSuppressedByHematoxylin and/or
@@ -97,7 +99,8 @@ StructurePreservingColorNormalizationFilter< TImage >
   // m_ColorIndexSuppressedByHematoxylin and
   // m_ColorIndexSuppressedByEosin.  Otherwise, the user must set them
   // directly.  Check that they have been set.
-  itkAssertOrThrowMacro( m_ColorIndexSuppressedByHematoxylin >= 0 && m_ColorIndexSuppressedByEosin >= 0, "Need to first set ColorIndexSuppressedByHematoxylin and ColorIndexSuppressedByEosin" );
+  itkAssertOrThrowMacro( m_ColorIndexSuppressedByHematoxylin >= 0 && m_ColorIndexSuppressedByEosin >= 0,
+    "Need to set StructurePreservingColorNormalizationFilter's ColorIndexSuppressedByHematoxylin and ColorIndexSuppressedByEosin before it" );
 
   // Find input and refer and make iterators for them.
   const ImageType * const inputPtr = this->GetInput( 0 ); // image to be normalized
@@ -107,16 +110,24 @@ StructurePreservingColorNormalizationFilter< TImage >
   itkAssertOrThrowMacro( inputPtr != nullptr || m_inputPtr != nullptr, "An image to be normalized needs to be supplied as input image #0" );
   itkAssertOrThrowMacro( referPtr != nullptr || m_referPtr != nullptr, "A reference image needs to be supplied as input image #1" );
 
-  // For each input, if there is a supplied image and it is different
+  // For each image, if there is a supplied image and it is different
   // from what we have cached then compute stuff and cache the
   // results.  These two calls to ImageToNMF could be done
   // simultaneously.
   if( inputPtr != nullptr && ( inputPtr != m_inputPtr || inputPtr->GetTimeStamp() != m_inputTimeStamp ) )
     {
     RegionConstIterator inputIter {inputPtr, inputPtr->GetRequestedRegion()};
+    // A runtime check for number of colors is needed for VectorImage
     inputIter.GoToBegin();
     m_ImageNumberOfColors = inputIter.Get().Size();
     itkAssertOrThrowMacro( m_ImageNumberOfColors >= 3, "Images need at least 3 colors but the input image to be normalized does not" );
+    if( referPtr == nullptr || ( referPtr == m_referPtr && referPtr->GetTimeStamp() == m_referTimeStamp ) )
+      {
+      RegionConstIterator referIter {m_referPtr, m_referPtr->GetRequestedRegion()};
+      itkAssertOrThrowMacro( ( referIter.GoToBegin(), m_ImageNumberOfColors == referIter.Get().Size() ),
+        "The (cached) reference image needs its number of colors to be exactly the same as the input image to be normalized" );
+      }
+
     m_inputUnstainedPixel = Self::PixelHelper< SizeValueType, PixelType >::pixelInstance( m_ImageNumberOfColors );
 
     if( this->ImageToNMF( inputIter, m_inputH, m_inputUnstainedPixel ) == 0 )
@@ -135,6 +146,8 @@ StructurePreservingColorNormalizationFilter< TImage >
 
   if( referPtr != nullptr && ( referPtr != m_referPtr || referPtr->GetTimeStamp() != m_referTimeStamp ) )
     {
+    // For VectorImage, check that number of colors is right in the
+    // new supplied reference image
     RegionConstIterator referIter {referPtr, referPtr->GetRequestedRegion()};
     itkAssertOrThrowMacro( ( referIter.GoToBegin(), m_ImageNumberOfColors == referIter.Get().Size() ),
       "The reference image needs its number of colors to be exactly the same as the input image to be normalized" );
@@ -163,14 +176,6 @@ StructurePreservingColorNormalizationFilter< TImage >
     m_referH.row( 0 ) = referHOriginal.row( 1 );
     m_referH.row( 1 ) = referHOriginal.row( 0 );
     }
-
-  // Correct for any scaling difference between m_referH and m_inputH.
-  // Is this the right approach if the input images have different
-  // numbers of colors?
-  const CalcColVectorType lastOnes {CalcColVectorType::Constant( m_referH.cols(), 1, 1.0 )};
-  m_referH = ( ( ( ( m_inputH.array() * m_inputH.array() ).matrix() * lastOnes ).array() + epsilon2 )
-             / ( ( ( m_referH.array() * m_referH.array() ).matrix() * lastOnes ).array() + epsilon2 ) )
-    .matrix().unaryExpr( CalcUnaryFunctionPointer( std::sqrt ) ).asDiagonal() * m_referH;
 }
 
 
@@ -194,10 +199,12 @@ StructurePreservingColorNormalizationFilter< TImage >
 {
   // To maintain locality of memory references, we are using
   // numberOfPixels as the number of rows rather than as the number of
-  // columns.  With V=WH, as is standard in non-negative matrix
-  // factorization, our matrices switch names and are transposed with
-  // respect to the Vahadane article.  In particular, our W is a tall
-  // matrix and our H is a fairly compact matrix.
+  // columns in row-major storage.  With V=WH, as is standard in
+  // non-negative matrix factorization, our matrices switch names and
+  // are transposed with respect to the Vahadane article.  In
+  // particular, our W is a very tall matrix and our H is a fairly
+  // compact matrix, whereas in Vahadane W is a fairly compact matrix
+  // and H is a very wide matrix.
 
   const SizeType size = inIter.GetRegion().GetSize();
   const SizeValueType numberOfPixels = std::accumulate( size.begin(), size.end(), 1, std::multiplies< SizeValueType >() );
@@ -215,6 +222,8 @@ StructurePreservingColorNormalizationFilter< TImage >
     {
     return 1;                   // we failed.
     }
+
+  // Correct for 99 percentile of each column of inputW!!!
 
   return 0;
 }
@@ -250,18 +259,17 @@ void
 StructurePreservingColorNormalizationFilter< TImage >
 ::MatrixToBrightPartOfMatrix( CalcMatrixType &matrixV ) const
 {
-  // A useful vector that has a 1 for each column of matrixV.
-  const CalcColVectorType lastOnes {CalcColVectorType::Constant( matrixV.cols(), 1, 1.0 )};
-
-  // We want only the brightest pixels.  Find the 80th percentile threshold.
-  const CalcColVectorType brightnessOriginal {matrixV * lastOnes};
+  // We want only the brightest pixels.  Find specified percentile
+  // threshold.
+  const CalcColVectorType brightnessOriginal {matrixV.rowwise().sum()};
   CalcColVectorType brightnessOrdered {brightnessOriginal};
   const CalcElementType percentileLevel {0.80};
   SizeValueType const quantilePosition {static_cast< SizeValueType >( ( brightnessOrdered.size() - 1 ) * percentileLevel )};
   std::nth_element( Self::begin( brightnessOrdered ), Self::begin( brightnessOrdered ) + quantilePosition, Self::end( brightnessOrdered ) );
   const CalcElementType percentileThreshold {brightnessOrdered( quantilePosition )};
-  // Find 70% of maximum brightness
-  const CalcElementType percentageLevel {0.70};
+  // We want only the brightest pixels.  Find specified fraction of
+  // maximum brightness.
+  const CalcElementType percentageLevel {0.70}; // Lower me?!!!
   const CalcElementType percentageThreshold {percentageLevel * *std::max_element( Self::cbegin( brightnessOriginal ), Self::cend( brightnessOriginal ) )};
 
   // We will keep those pixels that pass at least one of the above
@@ -315,18 +323,13 @@ void
 StructurePreservingColorNormalizationFilter< TImage >
 ::FirstPassDistinguishers( const CalcMatrixType &normVStart, std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, SizeValueType &numberOfDistinguishers ) const
 {
-  // A useful vector that has a 1 for each column of normVStart.
-  const CalcColVectorType lastOnes {CalcColVectorType::Constant( normVStart.cols(), 1, 1.0 )};
-  // A useful vector that has a 1 for each row of normVStart.
-  const CalcColVectorType firstOnes {CalcColVectorType::Constant( normVStart.rows(), 1, 1.0 )};
-
   CalcMatrixType normV {normVStart};
   numberOfDistinguishers = 0;
   bool needToRecenterMatrix = true;
   while( numberOfDistinguishers <= NumberOfStains )
     {
     // Find the next distinguishing row ( pixel )
-    firstPassDistinguisherIndices[numberOfDistinguishers] = this->MatrixToOneDistinguisher( normV, lastOnes );
+    firstPassDistinguisherIndices[numberOfDistinguishers] = this->MatrixToOneDistinguisher( normV );
     // If we found a distinguisher and we have not yet found
     // NumberOfStains+1 of them, then look for the next distinguisher.
     if( firstPassDistinguisherIndices[numberOfDistinguishers] >= 0 )
@@ -338,7 +341,7 @@ StructurePreservingColorNormalizationFilter< TImage >
         // Prepare to look for the next distinguisher
         if( needToRecenterMatrix )
           {
-          normV = this->RecenterMatrix( normV, firstOnes, firstPassDistinguisherIndices[numberOfDistinguishers - 1] );
+          normV = this->RecenterMatrix( normV, firstPassDistinguisherIndices[numberOfDistinguishers - 1] );
           needToRecenterMatrix = false;
           }
         else
@@ -362,11 +365,6 @@ StructurePreservingColorNormalizationFilter< TImage >
 ::SecondPassDistinguishers( const CalcMatrixType &normVStart, const std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, const SizeValueType numberOfDistinguishers,
   CalcMatrixType &secondPassDistinguisherColors ) const
 {
-  // A useful vector that has a 1 for each column of normVStart.
-  const CalcColVectorType lastOnes {CalcColVectorType::Constant( normVStart.cols(), 1, 1.0 )};
-  // A useful vector that has a 1 for each row of normVStart.
-  const CalcColVectorType firstOnes {CalcColVectorType::Constant( normVStart.rows(), 1, 1.0 )};
-
   for( int distinguisher {0}; distinguisher < numberOfDistinguishers; ++distinguisher )
     {
     CalcMatrixType normV {normVStart};
@@ -378,7 +376,7 @@ StructurePreservingColorNormalizationFilter< TImage >
         {
         if( needToRecenterMatrix )
           {
-          normV = this->RecenterMatrix( normV, firstOnes, firstPassDistinguisherIndices[otherDistinguisher] );
+          normV = this->RecenterMatrix( normV, firstPassDistinguisherIndices[otherDistinguisher] );
           needToRecenterMatrix = false;
           }
         else
@@ -413,9 +411,9 @@ StructurePreservingColorNormalizationFilter< TImage >
 template< typename TImage >
 int
 StructurePreservingColorNormalizationFilter< TImage >
-::MatrixToOneDistinguisher( const CalcMatrixType &normV, const CalcColVectorType &lastOnes )
+::MatrixToOneDistinguisher( const CalcMatrixType &normV )
 {
-  const CalcColVectorType lengths2 = ( normV.array() * normV.array() ).matrix() * lastOnes;
+  const CalcColVectorType lengths2 = normV.rowwise().squaredNorm();
   const CalcElementType * const result {std::max_element( Self::cbegin( lengths2 ), Self::cend( lengths2 ) )};
   if( *result > epsilon2 )
     {
@@ -432,9 +430,9 @@ StructurePreservingColorNormalizationFilter< TImage >
 template< typename TImage >
 typename StructurePreservingColorNormalizationFilter< TImage >::CalcMatrixType
 StructurePreservingColorNormalizationFilter< TImage >
-::RecenterMatrix( const CalcMatrixType &normV, const CalcColVectorType &firstOnes, const SizeValueType row )
+::RecenterMatrix( const CalcMatrixType &normV, const SizeValueType row )
 {
-  return normV - firstOnes * normV.row( row );
+  return CalcMatrixType( normV.rowwise() - normV.row ( row ) );
 }
 
 
@@ -455,9 +453,6 @@ StructurePreservingColorNormalizationFilter< TImage >
 ::DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, PixelType &unstainedPixel, CalcMatrixType &matrixH ) const
 {
   matrixH = CalcMatrixType {NumberOfStains, m_ImageNumberOfColors};
-
-  const CalcRowVectorType midOnes {CalcRowVectorType::Constant( 1, matrixH.rows(), 1.0 )};
-  const CalcColVectorType lastOnes {CalcColVectorType::Constant( matrixH.cols(), 1, 1.0 )};
 
   SizeValueType unstainedIndex;
   SizeValueType hematoxylinIndex;
@@ -491,7 +486,7 @@ StructurePreservingColorNormalizationFilter< TImage >
     {
     return std::max( CalcElementType( 0.0 ), x );
     };
-  matrixH = ( ( ( matrixH.array() * matrixH.array() ).matrix() * lastOnes ).unaryExpr( CalcUnaryFunctionPointer( std::sqrt ) ) ).asDiagonal().inverse() * matrixH;
+  matrixH = CalcColVectorType( matrixH.rowwise().squaredNorm() ).unaryExpr( CalcUnaryFunctionPointer( std::sqrt ) ).asDiagonal().inverse() * matrixH;
   matrixH = matrixH.unaryExpr( clip );
 
   return 0;
@@ -506,8 +501,7 @@ StructurePreservingColorNormalizationFilter< TImage >
   // Figure out which, distinguishers are unstained ( highest
   // brightness ), hematoxylin ( suppresses red ), and eosin (
   // suppresses green ).
-  const CalcColVectorType lastOnes {CalcColVectorType::Constant( distinguishers.cols(), 1, 1.0 )};
-  const CalcColVectorType lengths2 {( distinguishers.array() * distinguishers.array() ).matrix() * lastOnes};
+  const CalcColVectorType lengths2 {distinguishers.rowwise().squaredNorm()};
   const CalcElementType * const unstainedIterator {std::max_element( Self::cbegin( lengths2 ), Self::cend( lengths2 ) )};
   unstainedIndex =  std::distance( Self::cbegin( lengths2 ), unstainedIterator );
   // For typename RGBPixel, red is suppressed by hematoxylin and green
@@ -536,7 +530,6 @@ StructurePreservingColorNormalizationFilter< TImage >
     };
   matrixW = ( ( ( matrixV * matrixH.transpose() ).array() - lambda ).unaryExpr( clip ) + epsilon2 ).matrix() * ( matrixH * matrixH.transpose() ).inverse();
 
-  const CalcColVectorType lastOnes {CalcColVectorType::Constant( matrixV.cols(), 1, 1.0 )};
   // Apply Virtanen's algorithm to iteratively improve matrixW and
   // matrixH.  Note that parentheses optimize the order of matrix
   // chain multiplications and affect the speed of this method.
@@ -553,7 +546,7 @@ StructurePreservingColorNormalizationFilter< TImage >
     //             / ( ( ( matrixW * matrixW.transpose() ) * matrixH ).array() + epsilon2 ) ) ).matrix();
     // In lieu of rigorous Lagrange multipliers, renormalize rows of
     // matrixH to have unit magnitude.
-    // matrixH = ( ( ( matrixH.array() * matrixH.array() ).matrix() * lastOnes ).unaryExpr( CalcUnaryFunctionPointer( std::sqrt ) ) ).asDiagonal().inverse() * matrixH;
+    // matrixH = CalcRowVectorType( matrixH.rowwise().squaredNorm() ).unaryExpr( CalcUnaryFunctionPointer( std::sqrt ) ).asDiagonal().inverse() * matrixH;
     if( ( loopIter & 15 ) == 15 )
       {
       if( ( matrixW - previousMatrixW ).lpNorm< Eigen::Infinity >() < epsilon0 )
@@ -583,16 +576,16 @@ StructurePreservingColorNormalizationFilter< TImage >
   // Apply Virtanen's algorithm to iteratively improve matrixW and
   // matrixH.
   const CalcRowVectorType firstOnes {CalcRowVectorType::Constant( 1, matrixV.rows(), 1.0 )};
-  const CalcColVectorType lastOnes {CalcColVectorType::Constant( matrixV.cols(), 1, 1.0 )};
+  // const CalcColVectorType lastOnes {CalcColVectorType::Constant( matrixV.cols(), 1, 1.0 )};
   CalcMatrixType previousMatrixW {matrixW};
   for( SizeValueType loopIter {0}; loopIter < maxNumberOfIterations; ++loopIter )
     {
     matrixW = ( matrixW.array()
               * ( ( ( ( matrixV.array() + epsilon2 ) / ( ( matrixW * matrixH ).array() + epsilon2 ) + epsilon2 ).matrix() * matrixH.transpose() ).array()
-                / ( ( ( matrixH * lastOnes ) * firstOnes ).transpose().array() + epsilon2 ) ) ).matrix();
+                / ( ( ( matrixH.rowwise().sum() ) * firstOnes ).transpose().array() + epsilon2 ) ) ).matrix();
     // matrixH = ( matrixW.array()
     //           * ( ( ( matrixW.transpose() * ( ( matrixV.array() + epsilon2 ) / ( ( matrixW * matrixH ).array() + epsilon2 ) ).matrix() ).array() + epsilon2 )
-    //             / ( ( lastOnes * ( firstOnes * matrixW ) ).transpose().array() + epsilon2 ) ) ).matrix();
+    //             / ( ( lastOnes * ( matrixW.colwise().sum() ) ).transpose().array() + epsilon2 ) ) ).matrix();
     if( ( loopIter & 15 ) == 15 )
       {
       if( ( matrixW - previousMatrixW ).lpNorm< Eigen::Infinity >() < epsilon0 )

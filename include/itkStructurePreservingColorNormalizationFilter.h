@@ -114,9 +114,9 @@ protected:
   void SecondPassDistinguishers( const CalcMatrixType &normVStart, const std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, const SizeValueType numberOfDistinguishers,
     CalcMatrixType &secondPassDistinguisherColors ) const;
 
-  static int MatrixToOneDistinguisher( const CalcMatrixType &normV, const CalcColVectorType &lastOnes );
+  static int MatrixToOneDistinguisher( const CalcMatrixType &normV );
 
-  static CalcMatrixType RecenterMatrix( const CalcMatrixType &normV, const CalcColVectorType &firstOnes, const SizeValueType row );
+  static CalcMatrixType RecenterMatrix( const CalcMatrixType &normV, const SizeValueType row );
 
   static CalcMatrixType ProjectMatrix( const CalcMatrixType &normV, const SizeValueType row );
 
