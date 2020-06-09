@@ -88,6 +88,10 @@ public:
   // case it might be better to have NumberOfStains be a template
   // parameter or a setable class member.
   static constexpr SizeValueType NumberOfStains {2};
+  static constexpr CalcElementType BrightPercentileLevel {0.80};
+  static constexpr CalcElementType BrightPercentageLevel {0.70}; // Lower me?!!!
+  static constexpr CalcElementType DarkPercentileLevel {0.20};
+  static constexpr CalcElementType VeryDarkPercentileLevel {0.01};
 
 protected:
   StructurePreservingColorNormalizationFilter();
@@ -101,13 +105,13 @@ protected:
 
   void DynamicThreadedGenerateData( const RegionType & outputRegion ) override;
 
-  int ImageToNMF( RegionConstIterator &iter, CalcMatrixType &matrixH, PixelType &pixelUnstained ) const;
+  int ImageToNMF( RegionConstIterator &iter, CalcMatrixType &matrixH, PixelType &unstainedPixel ) const;
 
-  void ImageToMatrix( RegionConstIterator &iter, CalcMatrixType &matrixV ) const;
+  void ImageToMatrix( RegionConstIterator &inIter, const SizeValueType numberOfPixels, CalcMatrixType &matrixBrightV, CalcMatrixType &matrixDarkV ) const;
 
   void MatrixToDistinguishers( const CalcMatrixType &matrixV, CalcMatrixType &distinguishers ) const;
 
-  void MatrixToBrightPartOfMatrix( CalcMatrixType &matrixV ) const;
+  void MatrixToMatrixExtremes( const CalcMatrixType &matrixV, CalcMatrixType &matrixBrightV, CalcMatrixType &matrixDarkV ) const;
 
   void FirstPassDistinguishers( const CalcMatrixType &normVStart, std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, SizeValueType &numberOfDistinguishers ) const;
 
@@ -120,13 +124,15 @@ protected:
 
   static CalcMatrixType ProjectMatrix( const CalcMatrixType &normV, const SizeValueType row );
 
-  int DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, PixelType &pixelUnstained, CalcMatrixType &matrixH ) const;
+  int DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, PixelType &unstainedPixel, CalcMatrixType &matrixH ) const;
 
   void DistinguishersToColors( const CalcMatrixType &distinguishers, SizeValueType &unstainedIndex, SizeValueType &hematoxylinIndex, SizeValueType &eosinIndex ) const;
 
-  void VirtanenEuclidean( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, const CalcMatrixType &matrixH ) const;
+  void NormalizeMatrixH( const CalcMatrixType &matrixDarkV, const PixelType &unstainedPixel, CalcMatrixType &matrixH ) const;
 
-  void VirtanenKLDivergence( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, const CalcMatrixType &matrixH ) const;
+  void VirtanenEuclidean( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const;
+
+  void VirtanenKLDivergence( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const;
 
   void NMFsToImage( const CalcMatrixType &inputH, const PixelType &inputUnstained, const CalcMatrixType &referH, const PixelType &referUnstained, RegionIterator &out ) const;
 

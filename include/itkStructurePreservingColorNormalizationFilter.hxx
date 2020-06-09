@@ -134,7 +134,6 @@ StructurePreservingColorNormalizationFilter< TImage >
       {
       m_inputPtr = inputPtr;
       m_inputTimeStamp = inputPtr->GetTimeStamp();
-      { std::ostringstream mesg; mesg << "m_inputH = " << m_inputH << std::endl; std::cout << mesg.str() << std::flush; }
       }
     else
       {
@@ -156,7 +155,6 @@ StructurePreservingColorNormalizationFilter< TImage >
       {
       m_referPtr = referPtr;
       m_referTimeStamp = referPtr->GetTimeStamp();
-      { std::ostringstream mesg; mesg << "m_referH = " << m_referH << std::endl; std::cout << mesg.str() << std::flush; }
       }
     else
       {
@@ -176,6 +174,8 @@ StructurePreservingColorNormalizationFilter< TImage >
     m_referH.row( 0 ) = referHOriginal.row( 1 );
     m_referH.row( 1 ) = referHOriginal.row( 0 );
     }
+
+  itkAssertOrThrowMacro( ( m_inputH * m_referH.transpose() ).determinant() > CalcElementType( 0 ), "Hematoxylin and Eosin are getting mixed up; failed" );
 }
 
 
@@ -211,10 +211,11 @@ StructurePreservingColorNormalizationFilter< TImage >
 
   // Find distinguishers.  These are essentially the rows of matrixH.
   CalcMatrixType distinguishers;
-  CalcMatrixType matrixV {numberOfPixels, m_ImageNumberOfColors};
+  CalcMatrixType matrixBrightV;
+  CalcMatrixType matrixDarkV;
 
-  this->ImageToMatrix( inIter, matrixV );
-  this->MatrixToDistinguishers( matrixV, distinguishers );
+  this->ImageToMatrix( inIter, numberOfPixels, matrixBrightV, matrixDarkV );
+  this->MatrixToDistinguishers( matrixBrightV, distinguishers );
 
   // Use the distinguishers as seeds to the non-negative matrix
   // factorization.
@@ -223,7 +224,19 @@ StructurePreservingColorNormalizationFilter< TImage >
     return 1;                   // we failed.
     }
 
-  // Correct for 99 percentile of each column of inputW!!!
+  // Improve matrixH using Virtanen's algorithm
+  // { std::ostringstream mesg; mesg << "matrixH before VirtanenEuclidean = " << std::endl << matrixH << std::endl; std::cout << mesg.str() << std::flush; }
+    {
+    CalcMatrixType matrixW;     // Could end up large.
+    this->VirtanenEuclidean( matrixBrightV, matrixW, matrixH );
+    }
+
+  // Rescale each row of matrixH so that the
+  // (100-VeryDarkPercentileLevel) value of each column of matrixW is
+  // 1.0.
+  // { std::ostringstream mesg; mesg << "matrixH before NormalizeMatrixH = " << std::endl << matrixH << std::endl; std::cout << mesg.str() << std::flush; }
+  this->NormalizeMatrixH( matrixDarkV, unstainedPixel, matrixH );
+  { std::ostringstream mesg; mesg << "matrixH at end = " << std::endl << matrixH << std::endl; std::cout << mesg.str() << std::flush; }
 
   return 0;
 }
@@ -232,8 +245,9 @@ StructurePreservingColorNormalizationFilter< TImage >
 template< typename TImage >
 void
 StructurePreservingColorNormalizationFilter< TImage >
-::ImageToMatrix( RegionConstIterator &inIter, CalcMatrixType &matrixV ) const
+::ImageToMatrix( RegionConstIterator &inIter, const SizeValueType numberOfPixels, CalcMatrixType &matrixBrightV, CalcMatrixType &matrixDarkV ) const
 {
+  CalcMatrixType matrixV {numberOfPixels, m_ImageNumberOfColors};
   SizeValueType pixelIndex {0};
   for( inIter.GoToBegin(); !inIter.IsAtEnd(); ++inIter, ++pixelIndex )
     {
@@ -249,50 +263,69 @@ StructurePreservingColorNormalizationFilter< TImage >
   const CalcElementType nearZero {matrixV.lpNorm< Eigen::Infinity >() * epsilon1};
   matrixV = ( matrixV.array() + nearZero ).matrix();
 
-  // Keep only pixels that are bright enough.
-  this->MatrixToBrightPartOfMatrix( matrixV );
+  // Keep only pixels that are bright enough or dark enough to be useful.
+  this->MatrixToMatrixExtremes( matrixV, matrixBrightV, matrixDarkV );
 }
 
 
 template< typename TImage >
 void
 StructurePreservingColorNormalizationFilter< TImage >
-::MatrixToBrightPartOfMatrix( CalcMatrixType &matrixV ) const
+::MatrixToMatrixExtremes( const CalcMatrixType &matrixV, CalcMatrixType &matrixBrightV, CalcMatrixType &matrixDarkV ) const
 {
-  // We want only the brightest pixels.  Find specified percentile
-  // threshold.
-  const CalcColVectorType brightnessOriginal {matrixV.rowwise().sum()};
-  CalcColVectorType brightnessOrdered {brightnessOriginal};
-  const CalcElementType percentileLevel {0.80};
-  SizeValueType const quantilePosition {static_cast< SizeValueType >( ( brightnessOrdered.size() - 1 ) * percentileLevel )};
-  std::nth_element( Self::begin( brightnessOrdered ), Self::begin( brightnessOrdered ) + quantilePosition, Self::end( brightnessOrdered ) );
-  const CalcElementType percentileThreshold {brightnessOrdered( quantilePosition )};
-  // We want only the brightest pixels.  Find specified fraction of
-  // maximum brightness.
-  const CalcElementType percentageLevel {0.70}; // Lower me?!!!
-  const CalcElementType percentageThreshold {percentageLevel * *std::max_element( Self::cbegin( brightnessOriginal ), Self::cend( brightnessOriginal ) )};
+  const CalcColVectorType intensityOfPixels {matrixV.rowwise().sum()};
 
-  // We will keep those pixels that pass at least one of the above
-  // thresholds.
-  const CalcElementType brightnessThreshold {std::min( percentileThreshold, percentageThreshold )};
-  SizeValueType numberOfRowsToKeep {0};
+  // For finding the brightest pixels, find the specified percentile
+  // threshold.
+  CalcColVectorType brightRearranged {intensityOfPixels};
+  SizeValueType const BrightPercentilePosition {static_cast< SizeValueType >( ( brightRearranged.size() - 1 ) * BrightPercentileLevel )};
+  std::nth_element( Self::begin( brightRearranged ), Self::begin( brightRearranged ) + BrightPercentilePosition, Self::end( brightRearranged ) );
+  const CalcElementType BrightPercentileThreshold {brightRearranged( BrightPercentilePosition )};
+
+  // For finding the brightest pixels, find specified fraction of
+  // maximum bright.
+  const CalcElementType BrightPercentageThreshold {BrightPercentageLevel * *std::max_element( Self::cbegin( intensityOfPixels ), Self::cend( intensityOfPixels ) )};
+
+  // For finding the brightest pixels, we will keep those pixels that
+  // pass at least one of the above bright thresholds.
+  const CalcElementType brightThreshold {std::min( BrightPercentileThreshold, BrightPercentageThreshold )};
+
+  // For finding the darkest pixels, find the specified percentile
+  // threshold.
+  CalcColVectorType darkRearranged {intensityOfPixels};
+  SizeValueType const DarkPercentilePosition {static_cast< SizeValueType >( ( darkRearranged.size() - 1 ) * DarkPercentileLevel )};
+  std::nth_element( Self::begin( darkRearranged ), Self::begin( darkRearranged ) + DarkPercentilePosition, Self::end( darkRearranged ) );
+  const CalcElementType DarkPercentileThreshold {darkRearranged( DarkPercentilePosition )};
+  const CalcElementType darkThreshold {DarkPercentileThreshold};
+
+  SizeValueType numberOfBrightRows {0};
+  SizeValueType numberOfDarkRows {0};
   for( Eigen::Index i = 0 ; i < matrixV.rows(); ++i )
     {
-    if( brightnessOriginal( i ) >= brightnessThreshold )
+    if( intensityOfPixels( i ) >= brightThreshold )
       {
-      ++numberOfRowsToKeep;
+      ++numberOfBrightRows;
+      }
+    if( intensityOfPixels( i ) <= darkThreshold )
+      {
+      ++numberOfDarkRows;
       }
     }
-  CalcMatrixType brightV {numberOfRowsToKeep, matrixV.cols()};
-  numberOfRowsToKeep = 0;
+  matrixBrightV = CalcMatrixType {numberOfBrightRows, matrixV.cols()};
+  numberOfBrightRows = 0;
+  matrixDarkV = CalcMatrixType {numberOfDarkRows, matrixV.cols()};
+  numberOfDarkRows = 0;
   for( Eigen::Index i = 0 ; i < matrixV.rows(); ++i )
     {
-    if( brightnessOriginal( i ) >= brightnessThreshold )
+    if( intensityOfPixels( i ) >= brightThreshold )
       {
-      brightV.row( numberOfRowsToKeep++ ) = matrixV.row( i );
+      matrixBrightV.row( numberOfBrightRows++ ) = matrixV.row( i );
+      }
+    if( intensityOfPixels( i ) <= darkThreshold )
+      {
+      matrixDarkV.row( numberOfDarkRows++ ) = matrixV.row( i );
       }
     }
-  matrixV = brightV;
 }
 
 
@@ -480,13 +513,11 @@ StructurePreservingColorNormalizationFilter< TImage >
   matrixH.row( 0 ) = logHematoxylin;
   matrixH.row( 1 ) = logEosin;
 
-  // Make sure that each row of matrixH has unit magnitude, and each
-  // element of matrixH is sufficiently non-negative.
+  // If somehow an element of matrixH is negative, set it to zero.
   const auto clip = [] ( const CalcElementType &x )
     {
     return std::max( CalcElementType( 0.0 ), x );
     };
-  matrixH = CalcColVectorType( matrixH.rowwise().squaredNorm() ).unaryExpr( CalcUnaryFunctionPointer( std::sqrt ) ).asDiagonal().inverse() * matrixH;
   matrixH = matrixH.unaryExpr( clip );
 
   return 0;
@@ -522,31 +553,69 @@ StructurePreservingColorNormalizationFilter< TImage >
 template< typename TImage >
 void
 StructurePreservingColorNormalizationFilter< TImage >
-::VirtanenEuclidean( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, const CalcMatrixType &matrixH ) const
+::NormalizeMatrixH( const CalcMatrixType &matrixDarkVIn, const PixelType &unstainedPixel, CalcMatrixType &matrixH ) const
+{
+  const CalcColVectorType firstOnes {CalcColVectorType::Constant( matrixDarkVIn.rows(), 1, 1.0 )};
+
+  // Compute the VeryDarkPercentileLevel percentile of a stain's
+  // negative(matrixW) column.  This a dark value due to its being the
+  // (100 - VeryDarkPercentileLevel) among quantities of stain.
+  CalcRowVectorType logUnstainedCalcPixel {m_ImageNumberOfColors};
+  for( Eigen::Index color = 0; color < m_ImageNumberOfColors; ++color )
+    {
+    logUnstainedCalcPixel( color ) = std::log( static_cast< CalcElementType >( unstainedPixel[color] ) );
+    }
+  CalcMatrixType matrixDarkV {matrixDarkVIn};
+  const CalcElementType nearZero {matrixDarkV.lpNorm< Eigen::Infinity >() * epsilon1};
+  matrixDarkV = ( matrixDarkV.array() + nearZero ).matrix();
+  matrixDarkV = ( firstOnes * logUnstainedCalcPixel) - matrixDarkV.unaryExpr( CalcUnaryFunctionPointer( std::log ) );
+
+  const auto clip = [] ( const CalcElementType &x )
+    {
+    return std::max( CalcElementType( 0.0 ), x );
+    };
+  CalcMatrixType negativeMatrixW = ( ( matrixDarkV * matrixH.transpose() ).array() - lambda ).unaryExpr( clip ).matrix() * ( - matrixH * matrixH.transpose() ).inverse();
+  for( Eigen::Index stain = 0; stain < NumberOfStains; ++stain )
+    {
+    CalcColVectorType columnW {negativeMatrixW.col( stain )};
+    SizeValueType const VeryDarkPercentilePosition
+      {static_cast< SizeValueType >( ( columnW.size() - 1 ) * VeryDarkPercentileLevel / DarkPercentileLevel )};
+    std::nth_element( Self::begin( columnW ), Self::begin( columnW ) + VeryDarkPercentilePosition, Self::end( columnW ) );
+    const CalcElementType VeryDarkPercentileThreshold {-columnW( VeryDarkPercentilePosition )};
+    matrixH.row( stain ) *= VeryDarkPercentileThreshold;
+    }
+}
+
+
+template< typename TImage >
+void
+StructurePreservingColorNormalizationFilter< TImage >
+::VirtanenEuclidean( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const
 {
   const auto clip = [] ( const CalcElementType &x )
     {
     return std::max( CalcElementType( 0.0 ), x );
     };
-  matrixW = ( ( ( matrixV * matrixH.transpose() ).array() - lambda ).unaryExpr( clip ) + epsilon2 ).matrix() * ( matrixH * matrixH.transpose() ).inverse();
+  matrixW = ( ( ( ( matrixV * matrixH.transpose() ).array() - lambda ).unaryExpr( clip ) + epsilon2 ).matrix() * ( matrixH * matrixH.transpose() ).inverse() ).unaryExpr( clip );
 
   // Apply Virtanen's algorithm to iteratively improve matrixW and
   // matrixH.  Note that parentheses optimize the order of matrix
   // chain multiplications and affect the speed of this method.
   CalcMatrixType previousMatrixW {matrixW};
-  SizeValueType loopIter {0};
-  for( ; loopIter < maxNumberOfIterations; ++loopIter )
+  for( SizeValueType loopIter {0}; loopIter < maxNumberOfIterations; ++loopIter )
     {
     // Lasso term "lambda" insertion is possibly in a novel way.
-    matrixW = ( matrixW.array()
-              * ( ( ( ( matrixV * matrixH.transpose() ).array() - lambda ).unaryExpr( clip ) + epsilon2 )
-                / ( ( matrixW * ( matrixH * matrixH.transpose() ) ).array() + epsilon2 ) ) ).matrix();
-    // matrixH = ( matrixH.array()
-    //           * ( ( ( matrixW.transpose() * matrixV ).array() + epsilon2 )
-    //             / ( ( ( matrixW * matrixW.transpose() ) * matrixH ).array() + epsilon2 ) ) ).matrix();
+    matrixW = (
+      matrixW.array()
+      * ( ( ( ( matrixV * matrixH.transpose() ).array() - lambda ).unaryExpr( clip ) + epsilon2 )
+        / ( ( matrixW * ( matrixH * matrixH.transpose() ) ).array() + epsilon2 ) ) ).matrix();
+    matrixH = (
+      matrixH.array()
+      * ( ( ( matrixW.transpose() * matrixV ).array() + epsilon2 )
+        / ( ( ( matrixW.transpose() * matrixW ) * matrixH ).array() + epsilon2 ) ) ).matrix();
     // In lieu of rigorous Lagrange multipliers, renormalize rows of
     // matrixH to have unit magnitude.
-    // matrixH = CalcRowVectorType( matrixH.rowwise().squaredNorm() ).unaryExpr( CalcUnaryFunctionPointer( std::sqrt ) ).asDiagonal().inverse() * matrixH;
+    matrixH = CalcRowVectorType( matrixH.rowwise().squaredNorm() ).unaryExpr( CalcUnaryFunctionPointer( std::sqrt ) ).asDiagonal().inverse() * matrixH;
     if( ( loopIter & 15 ) == 15 )
       {
       if( ( matrixW - previousMatrixW ).lpNorm< Eigen::Infinity >() < epsilon0 )
@@ -567,25 +636,36 @@ StructurePreservingColorNormalizationFilter< TImage >
 template< typename TImage >
 void
 StructurePreservingColorNormalizationFilter< TImage >
-::VirtanenKLDivergence( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, const CalcMatrixType &matrixH ) const
+::VirtanenKLDivergence( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const
 {
   // If this method is going to get used, we may need to incorporate
   // the Lasso penalty lambda for matrixW and incorporate the Lagrange
   // multipliers to make each row of matrixH have magnitude 1.0.
 
+  const auto clip = [] ( const CalcElementType &x )
+    {
+    return std::max( CalcElementType( 0.0 ), x );
+    };
+  matrixW = ( ( ( ( matrixV * matrixH.transpose() ).array() - lambda ).unaryExpr( clip ) + epsilon2 ).matrix() * ( matrixH * matrixH.transpose() ).inverse() ).unaryExpr( clip );
+
   // Apply Virtanen's algorithm to iteratively improve matrixW and
   // matrixH.
   const CalcRowVectorType firstOnes {CalcRowVectorType::Constant( 1, matrixV.rows(), 1.0 )};
-  // const CalcColVectorType lastOnes {CalcColVectorType::Constant( matrixV.cols(), 1, 1.0 )};
+  const CalcColVectorType lastOnes {CalcColVectorType::Constant( matrixV.cols(), 1, 1.0 )};
   CalcMatrixType previousMatrixW {matrixW};
   for( SizeValueType loopIter {0}; loopIter < maxNumberOfIterations; ++loopIter )
     {
-    matrixW = ( matrixW.array()
-              * ( ( ( ( matrixV.array() + epsilon2 ) / ( ( matrixW * matrixH ).array() + epsilon2 ) + epsilon2 ).matrix() * matrixH.transpose() ).array()
-                / ( ( ( matrixH.rowwise().sum() ) * firstOnes ).transpose().array() + epsilon2 ) ) ).matrix();
-    // matrixH = ( matrixW.array()
-    //           * ( ( ( matrixW.transpose() * ( ( matrixV.array() + epsilon2 ) / ( ( matrixW * matrixH ).array() + epsilon2 ) ).matrix() ).array() + epsilon2 )
-    //             / ( ( lastOnes * ( matrixW.colwise().sum() ) ).transpose().array() + epsilon2 ) ) ).matrix();
+    matrixW = (
+      matrixW.array()
+      * ( ( ( ( ( matrixV.array() + epsilon2 ) / ( ( matrixW * matrixH ).array() + epsilon2 ) ).matrix() * matrixH.transpose() ).array() + epsilon2 )
+        / ( ( ( matrixH.rowwise().sum() ) * firstOnes ).transpose().array() + epsilon2 ) ) ).matrix();
+    matrixH = (
+      matrixW.array()
+      * ( ( ( matrixW.transpose() * ( ( matrixV.array() + epsilon2 ) / ( ( matrixW * matrixH ).array() + epsilon2 ) ).matrix() ).array() + epsilon2 )
+        / ( ( lastOnes * ( matrixW.colwise().sum() ) ).transpose().array() + epsilon2 ) ) ).matrix();
+    // In lieu of rigorous Lagrange multipliers, renormalize rows of
+    // matrixH to have unit magnitude.
+    matrixH = CalcRowVectorType( matrixH.rowwise().squaredNorm() ).unaryExpr( CalcUnaryFunctionPointer( std::sqrt ) ).asDiagonal().inverse() * matrixH;
     if( ( loopIter & 15 ) == 15 )
       {
       if( ( matrixW - previousMatrixW ).lpNorm< Eigen::Infinity >() < epsilon0 )
@@ -654,8 +734,7 @@ StructurePreservingColorNormalizationFilter< TImage >
     }
 
   // Find the associated matrixW
-  CalcMatrixType matrixW;
-  this->VirtanenEuclidean( matrixV, matrixW, inputH );
+  CalcMatrixType matrixW = ( ( matrixV * inputH.transpose() ).array() - lambda ).matrix() * ( inputH * inputH.transpose() ).inverse();
 
   // Use the matrixW with referH to compute updated values for
   // matrixV.
@@ -759,6 +838,26 @@ template< typename TImage >
 constexpr typename StructurePreservingColorNormalizationFilter< TImage >::SizeValueType
 StructurePreservingColorNormalizationFilter< TImage >
 ::NumberOfStains;
+
+template< typename TImage >
+constexpr typename StructurePreservingColorNormalizationFilter< TImage >::CalcElementType
+StructurePreservingColorNormalizationFilter< TImage >
+::BrightPercentileLevel;
+
+template< typename TImage >
+constexpr typename StructurePreservingColorNormalizationFilter< TImage >::CalcElementType
+StructurePreservingColorNormalizationFilter< TImage >
+::BrightPercentageLevel;
+
+template< typename TImage >
+constexpr typename StructurePreservingColorNormalizationFilter< TImage >::CalcElementType
+StructurePreservingColorNormalizationFilter< TImage >
+::DarkPercentileLevel;
+
+template< typename TImage >
+constexpr typename StructurePreservingColorNormalizationFilter< TImage >::CalcElementType
+StructurePreservingColorNormalizationFilter< TImage >
+::VeryDarkPercentileLevel;
 
 template< typename TImage >
 constexpr typename StructurePreservingColorNormalizationFilter< TImage >::CalcElementType
