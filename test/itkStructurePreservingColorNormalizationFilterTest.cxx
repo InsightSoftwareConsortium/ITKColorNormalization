@@ -100,25 +100,21 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
   const char * const outputImageFileName = argv[3];
 
   constexpr unsigned int Dimension = 2;
-#if 1
   using PixelType = itk::RGBPixel< unsigned char >;
   static constexpr unsigned int NumberOfColors = PixelType::Length;
   using ImageType = itk::Image< PixelType, Dimension >; // IRGBUC2
-#else
-  // Debug this case!!!
-  using ImageType = itk::VectorImage< unsigned char, 2 >; // VIUC2
-  static constexpr unsigned int NumberOfColors = 4;
-  using PixelType = typename ImageType::PixelType;
-#endif
 
   using FilterType = itk::StructurePreservingColorNormalizationFilter< ImageType >;
   FilterType::Pointer filter = FilterType::New();
+  // filter->SetColorIndexSuppressedByHematoxylin( 0 );
+  // filter->SetColorIndexSuppressedByEosin( 1 );
 
   EXERCISE_BASIC_OBJECT_METHODS( filter, StructurePreservingColorNormalizationFilter, ImageToImageFilter );
 
   ShowProgress::Pointer showProgress = ShowProgress::New();
   filter->AddObserver( itk::ProgressEvent(), showProgress );
 
+#if 1
   using ReaderType = itk::ImageFileReader< ImageType >;
   ReaderType::Pointer reader0 = ReaderType::New();
   reader0->SetFileName( input0ImageFileName );
@@ -128,9 +124,9 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
   reader1->SetFileName( input1ImageFileName );
   filter->SetInput( 1, reader1->GetOutput() );   // reference image for normalization
 
-#if 0
+#else
   // Create input images to avoid test dependencies.
-  const ImageType::SizeValueType testSize = 128;
+  const ImageType::SizeValueType testSize = 1024;
   ImageType::SizeType size;
   size.Fill( testSize );
   ImageType::Pointer input = ImageType::New();

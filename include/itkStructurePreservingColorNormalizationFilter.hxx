@@ -20,7 +20,7 @@
 #define itkStructurePreservingColorNormalizationFilter_hxx
 
 #include "itkStructurePreservingColorNormalizationFilter.h"
-#include "itkRGBPixel.h"
+#include "itkMersenneTwisterRandomVariateGenerator.h"
 #include <numeric>
 
 namespace itk
@@ -100,7 +100,7 @@ StructurePreservingColorNormalizationFilter< TImage >
   // m_ColorIndexSuppressedByEosin.  Otherwise, the user must set them
   // directly.  Check that they have been set.
   itkAssertOrThrowMacro( m_ColorIndexSuppressedByHematoxylin >= 0 && m_ColorIndexSuppressedByEosin >= 0,
-    "Need to set StructurePreservingColorNormalizationFilter's ColorIndexSuppressedByHematoxylin and ColorIndexSuppressedByEosin before it" );
+    "Need to set ColorIndexSuppressedByHematoxylin and ColorIndexSuppressedByEosin before using StructurePreservingColorNormalizationFilter" );
 
   // Find input and refer and make iterators for them.
   const ImageType * const inputPtr = this->GetInput( 0 ); // image to be normalized
@@ -119,7 +119,7 @@ StructurePreservingColorNormalizationFilter< TImage >
     RegionConstIterator inputIter {inputPtr, inputPtr->GetRequestedRegion()};
     // A runtime check for number of colors is needed for VectorImage
     inputIter.GoToBegin();
-    m_ImageNumberOfColors = inputIter.Get().Size();
+    m_ImageNumberOfColors = inputIter.Get().Size(); // Use a PixelHelper function instead so that RGBA is treated correctly!!!
     itkAssertOrThrowMacro( m_ImageNumberOfColors >= 3, "Images need at least 3 colors but the input image to be normalized does not" );
     if( referPtr == nullptr || ( referPtr == m_referPtr && referPtr->GetTimeStamp() == m_referTimeStamp ) )
       {
@@ -245,16 +245,26 @@ StructurePreservingColorNormalizationFilter< TImage >
 template< typename TImage >
 void
 StructurePreservingColorNormalizationFilter< TImage >
-::ImageToMatrix( RegionConstIterator &inIter, const SizeValueType numberOfPixels, CalcMatrixType &matrixBrightV, CalcMatrixType &matrixDarkV ) const
+::ImageToMatrix( RegionConstIterator &inIter, SizeValueType numberOfPixels, CalcMatrixType &matrixBrightV, CalcMatrixType &matrixDarkV ) const
 {
-  CalcMatrixType matrixV {numberOfPixels, m_ImageNumberOfColors};
-  SizeValueType pixelIndex {0};
-  for( inIter.GoToBegin(); !inIter.IsAtEnd(); ++inIter, ++pixelIndex )
+  // If the image is big, take a random subset of its pixels and put them into matrixV.
+  using UniformGeneratorType = itk::Statistics::MersenneTwisterRandomVariateGenerator;
+  UniformGeneratorType::Pointer uniformGenerator = UniformGeneratorType::New();
+  uniformGenerator->Initialize( 20200609 );
+
+  SizeValueType numberOfRows = std::min( numberOfPixels, maxNumberOfRows );
+
+  CalcMatrixType matrixV {numberOfRows, m_ImageNumberOfColors};
+  for( inIter.GoToBegin(); !inIter.IsAtEnd(); ++inIter )
     {
-    PixelType pixelValue = inIter.Get();
-    for( Eigen::Index color = 0; color < m_ImageNumberOfColors; ++color )
+    if ( uniformGenerator->GetVariate() * numberOfPixels-- < numberOfRows )
       {
-      matrixV( pixelIndex, color ) = pixelValue[color];
+      --numberOfRows;
+      PixelType pixelValue = inIter.Get();
+      for( Eigen::Index color = 0; color < m_ImageNumberOfColors; ++color )
+        {
+        matrixV( numberOfRows, color ) = pixelValue[color];
+        }
       }
     }
 
@@ -263,7 +273,8 @@ StructurePreservingColorNormalizationFilter< TImage >
   const CalcElementType nearZero {matrixV.lpNorm< Eigen::Infinity >() * epsilon1};
   matrixV = ( matrixV.array() + nearZero ).matrix();
 
-  // Keep only pixels that are bright enough or dark enough to be useful.
+  // Of the randomly chosen pixels, keep only those that are bright
+  // enough or dark enough to be useful.
   this->MatrixToMatrixExtremes( matrixV, matrixBrightV, matrixDarkV );
 }
 
@@ -875,14 +886,19 @@ StructurePreservingColorNormalizationFilter< TImage >
 ::epsilon2;
 
 template< typename TImage >
+constexpr typename StructurePreservingColorNormalizationFilter< TImage >::CalcElementType
+StructurePreservingColorNormalizationFilter< TImage >
+::lambda;
+
+template< typename TImage >
 constexpr typename StructurePreservingColorNormalizationFilter< TImage >::SizeValueType
 StructurePreservingColorNormalizationFilter< TImage >
 ::maxNumberOfIterations;
 
 template< typename TImage >
-constexpr typename StructurePreservingColorNormalizationFilter< TImage >::CalcElementType
+constexpr typename StructurePreservingColorNormalizationFilter< TImage >::SizeValueType
 StructurePreservingColorNormalizationFilter< TImage >
-::lambda;
+::maxNumberOfRows;
 
 } // end namespace itk
 

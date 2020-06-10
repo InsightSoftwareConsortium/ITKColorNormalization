@@ -107,7 +107,7 @@ protected:
 
   int ImageToNMF( RegionConstIterator &iter, CalcMatrixType &matrixH, PixelType &unstainedPixel ) const;
 
-  void ImageToMatrix( RegionConstIterator &inIter, const SizeValueType numberOfPixels, CalcMatrixType &matrixBrightV, CalcMatrixType &matrixDarkV ) const;
+  void ImageToMatrix( RegionConstIterator &inIter, SizeValueType numberOfPixels, CalcMatrixType &matrixBrightV, CalcMatrixType &matrixDarkV ) const;
 
   void MatrixToDistinguishers( const CalcMatrixType &matrixV, CalcMatrixType &distinguishers ) const;
 
@@ -228,6 +228,8 @@ protected:
   template< typename TSizeValueType, typename TScalar>
   struct PixelHelper< TSizeValueType, itk::RGBAPixel< TScalar >, void >
     {
+    // With RGBA, A (alpha) is an opacity, not a color.  It should be
+    // faithfully copied to the output, but otherwise ignored!!!
     using PixelType = itk::RGBAPixel< TScalar >;
     static constexpr TSizeValueType Length = PixelType::Length;
     static constexpr Eigen::Index ColorIndexSuppressedByHematoxylin = 0;
@@ -260,8 +262,9 @@ private:
   static constexpr CalcElementType epsilon0 {1e-3}; // a small matrix.array_inf_norm() value
   static constexpr CalcElementType epsilon1 {1e-6}; // a very small matrix element
   static constexpr CalcElementType epsilon2 {1e-12}; // a very small squared magnitude for a vector.
-  static constexpr SizeValueType maxNumberOfIterations {0}; // For Virtanen's non-negative matrix factorization algorithm.
   static constexpr CalcElementType lambda {0.00}; // For Lasso penalty.
+  static constexpr SizeValueType maxNumberOfIterations {0}; // For Virtanen's non-negative matrix factorization algorithm.
+  static constexpr SizeValueType maxNumberOfRows {100000}; // Select a subset of the pixels if the image has more than this
 
 
 #ifdef ITK_USE_CONCEPT_CHECKING
