@@ -93,7 +93,102 @@ public:
   static constexpr CalcElementType DarkPercentileLevel {0.20};
   static constexpr CalcElementType VeryDarkPercentileLevel {0.01};
 
+  // We have special cases for different pixel types, including: (1)
+  // we refuse to process fewer than 3 colors (at compile time where
+  // possible) and (2) RBGA pixels have 4 dimensions but only 3
+  // colors.  We accomplish the special cases via the PixelHelper
+  // class, similar in concept to the itk::PixelTraits class, but with
+  // different capabilities.
+  //
+  // The default: for the case that the number of colors is not
+  // determined at compile time, such as with a VectorImage:
+  template< typename TPixelType, typename = void >
+  struct PixelHelper
+    {
+    using PixelType = TPixelType;
+    using PixelTypeForColorsOnly = PixelType;
+    static constexpr SizeValueType NumberOfDimensions = -1;
+    static constexpr SizeValueType NumberOfColors = -1;
+    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin = -1;
+    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin = -1;
+    static PixelTypeForColorsOnly pixelForColorsOnly( unsigned numberOfColors ) { return PixelTypeForColorsOnly {numberOfColors}; }
+    static PixelType pixelOfAllDimensions( unsigned numberOfDimensions ) { return PixelType {numberOfDimensions}; }
+    };
+  // For the case that the number of colors is implicitly set to 1 at
+  // compile time.  We will refuse to compile this case via a
+  // static_assert in the constructor for
+  // StructurePreservingColorNormalizationFilter.
+  template< typename TPixelType >
+  struct PixelHelper< TPixelType, typename std::enable_if< std::is_arithmetic< TPixelType >::value >::type >
+    {
+    using PixelType = TPixelType;
+    using PixelTypeForColorsOnly = PixelType;
+    static constexpr SizeValueType NumberOfDimensions = 1;
+    static constexpr SizeValueType NumberOfColors = 1;
+    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin = -1;
+    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin = -1;
+    static PixelTypeForColorsOnly pixelForColorsOnly( unsigned numberOfColors ) { return PixelTypeForColorsOnly {}; }
+    static PixelType pixelOfAllDimensions( unsigned numberOfDimensions ) { return PixelType {}; }
+    };
+  // For the case that the pixel type is itk::RGBPixel:
+  template< typename TScalar>
+  struct PixelHelper< itk::RGBPixel< TScalar >, void >
+    {
+    using PixelType = itk::RGBPixel< TScalar >;
+    using PixelTypeForColorsOnly = PixelType;
+    static constexpr SizeValueType NumberOfDimensions = 3;
+    static constexpr SizeValueType NumberOfColors = 3;
+    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin = 0;
+    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin = 1;
+    static PixelTypeForColorsOnly pixelForColorsOnly( unsigned numberOfColors ) { return PixelTypeForColorsOnly {}; }
+    static PixelType pixelOfAllDimensions( unsigned numberOfDimensions ) { return PixelType {}; }
+    };
+  // For the case that the pixel type is itk::RGBAPixel:
+  template< typename TScalar>
+  struct PixelHelper< itk::RGBAPixel< TScalar >, void >
+    {
+    using PixelType = itk::RGBAPixel< TScalar >;
+    using PixelTypeForColorsOnly = itk::RGBPixel< TScalar >;
+    static constexpr SizeValueType NumberOfDimensions = 4;
+    static constexpr SizeValueType NumberOfColors = 3;
+    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin = 0;
+    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin = 1;
+    static PixelTypeForColorsOnly pixelForColorsOnly( unsigned numberOfColors ) { return PixelTypeForColorsOnly {}; }
+    static PixelType pixelOfAllDimensions( unsigned numberOfDimensions ) { return PixelType {}; }
+    };
+  // For the cases that the pixel type is itk::Vector or
+  // itk::CovariantVector.  If NVectorDimension is not at least 3 we
+  // will refuse to compile this case via a static_assert in the
+  // constructor of StructurePreservingColorNormalizationFilter.
+  template< typename TScalar, unsigned int NVectorDimension >
+  struct PixelHelper< itk::Vector< TScalar, NVectorDimension >, void >
+    {
+    using PixelType = itk::Vector< TScalar, NVectorDimension >;
+    using PixelTypeForColorsOnly = PixelType;
+    static constexpr SizeValueType NumberOfDimensions = NVectorDimension;
+    static constexpr SizeValueType NumberOfColors = NVectorDimension;
+    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin = -1;
+    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin = -1;
+    static PixelTypeForColorsOnly pixelForColorsOnly( unsigned numberOfColors ) { return PixelTypeForColorsOnly {}; }
+    static PixelType pixelOfAllDimensions( unsigned numberOfDimensions ) { return PixelType {}; }
+    };
+  template< typename TScalar, unsigned int NVectorDimension >
+  struct PixelHelper< itk::CovariantVector< TScalar, NVectorDimension >, void >
+    {
+    using PixelType = itk::CovariantVector< TScalar, NVectorDimension >;
+    using PixelTypeForColorsOnly = PixelType;
+    static constexpr SizeValueType NumberOfDimensions = NVectorDimension;
+    static constexpr SizeValueType NumberOfColors = NVectorDimension;
+    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin = -1;
+    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin = -1;
+    static PixelTypeForColorsOnly pixelForColorsOnly( unsigned numberOfColors ) { return PixelTypeForColorsOnly {}; }
+    static PixelType pixelOfAllDimensions( unsigned numberOfDimensions ) { return PixelType {}; }
+    };
+
+  using PixelTypeForColorsOnly = typename PixelHelper< PixelType >::PixelTypeForColorsOnly;
+
 protected:
+
   StructurePreservingColorNormalizationFilter();
   ~StructurePreservingColorNormalizationFilter() override = default;
 
@@ -105,18 +200,18 @@ protected:
 
   void DynamicThreadedGenerateData( const RegionType & outputRegion ) override;
 
-  int ImageToNMF( RegionConstIterator &iter, CalcMatrixType &matrixH, PixelType &unstainedPixel ) const;
+  int ImageToNMF( RegionConstIterator &iter, CalcMatrixType &matrixH, PixelTypeForColorsOnly &unstainedPixel ) const;
 
   void ImageToMatrix( RegionConstIterator &inIter, SizeValueType numberOfPixels, CalcMatrixType &matrixBrightV, CalcMatrixType &matrixDarkV ) const;
 
-  void MatrixToDistinguishers( const CalcMatrixType &matrixV, CalcMatrixType &distinguishers ) const;
+  static void MatrixToDistinguishers( const CalcMatrixType &matrixV, CalcMatrixType &distinguishers );
 
-  void MatrixToMatrixExtremes( const CalcMatrixType &matrixV, CalcMatrixType &matrixBrightV, CalcMatrixType &matrixDarkV ) const;
+  static void MatrixToMatrixExtremes( const CalcMatrixType &matrixV, CalcMatrixType &matrixBrightV, CalcMatrixType &matrixDarkV );
 
-  void FirstPassDistinguishers( const CalcMatrixType &normVStart, std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, SizeValueType &numberOfDistinguishers ) const;
+  static void FirstPassDistinguishers( const CalcMatrixType &normVStart, std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, SizeValueType &numberOfDistinguishers );
 
-  void SecondPassDistinguishers( const CalcMatrixType &normVStart, const std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, const SizeValueType numberOfDistinguishers,
-    CalcMatrixType &secondPassDistinguisherColors ) const;
+  static void SecondPassDistinguishers( const CalcMatrixType &normVStart, const std::array< int, NumberOfStains+1 > &firstPassDistinguisherIndices, const SizeValueType numberOfDistinguishers,
+    CalcMatrixType &secondPassDistinguisherColors );
 
   static int MatrixToOneDistinguisher( const CalcMatrixType &normV );
 
@@ -124,17 +219,17 @@ protected:
 
   static CalcMatrixType ProjectMatrix( const CalcMatrixType &normV, const SizeValueType row );
 
-  int DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, PixelType &unstainedPixel, CalcMatrixType &matrixH ) const;
+  int DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, PixelTypeForColorsOnly &unstainedPixel, CalcMatrixType &matrixH ) const;
 
   void DistinguishersToColors( const CalcMatrixType &distinguishers, SizeValueType &unstainedIndex, SizeValueType &hematoxylinIndex, SizeValueType &eosinIndex ) const;
 
-  void NormalizeMatrixH( const CalcMatrixType &matrixDarkV, const PixelType &unstainedPixel, CalcMatrixType &matrixH ) const;
+  void NormalizeMatrixH( const CalcMatrixType &matrixDarkV, const PixelTypeForColorsOnly &unstainedPixel, CalcMatrixType &matrixH ) const;
 
-  void VirtanenEuclidean( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const;
+  static void VirtanenEuclidean( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH );
 
-  void VirtanenKLDivergence( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH ) const;
+  static void VirtanenKLDivergence( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH );
 
-  void NMFsToImage( const CalcMatrixType &inputH, const PixelType &inputUnstained, const CalcMatrixType &referH, const PixelType &referUnstained, RegionIterator &out ) const;
+  void NMFsToImage( const CalcMatrixType &inputH, const PixelTypeForColorsOnly &inputUnstained, const CalcMatrixType &referH, const PixelTypeForColorsOnly &referUnstained, RegionIterator &out ) const;
 
   // Our installation of Eigen3 does not have iterators.  ( They
   // arrive with Eigen 3.4. )  We define begin, cbegin, end, and cend
@@ -176,87 +271,16 @@ protected:
   const ImageType *m_inputPtr;
   TimeStamp m_inputTimeStamp;
   CalcMatrixType m_inputH;
-  PixelType m_inputUnstainedPixel;
+  PixelTypeForColorsOnly m_inputUnstainedPixel;
   const ImageType *m_referPtr;
   TimeStamp m_referTimeStamp;
   CalcMatrixType m_referH;
-  PixelType m_referUnstainedPixel;
+  PixelTypeForColorsOnly m_referUnstainedPixel;
 
-  Eigen::Index m_ImageNumberOfColors;
+  Eigen::Index m_NumberOfDimensions;
+  Eigen::Index m_NumberOfColors;
   Eigen::Index m_ColorIndexSuppressedByHematoxylin;
   Eigen::Index m_ColorIndexSuppressedByEosin;
-
-  // The size of (aka the number of colors for) a pixel may not be set
-  // until runtime.  However, if it is set at compile time and is not
-  // at least 3 then refuse to compile.  Note that std::void_t is not
-  // defined for all compilers, so we define our own (C++-14-safe)
-  // version here.  We have added support for VariableLengthVector
-  // which makes struct PixelHelper more than itkPixelTraits.
-  template< typename... Ts > struct make_void { using type = void; };
-  template< typename... Ts > using void_t = typename make_void< Ts... >::type;
-  // If the number of colors is not set at compile time:
-  template< typename TSizeValueType, typename TPixelType, typename = void >
-  struct PixelHelper
-    {
-    using PixelType = TPixelType;
-    static constexpr TSizeValueType Length = -1;
-    static constexpr Eigen::Index ColorIndexSuppressedByHematoxylin = -1;
-    static constexpr Eigen::Index ColorIndexSuppressedByEosin = -1;
-    static PixelType pixelInstance( unsigned size ) { return PixelType {size}; }
-    };
-  // If the number of colors is implicitly set to 1 at compile time:
-  template< typename TSizeValueType, typename TPixelType >
-  struct PixelHelper< TSizeValueType, TPixelType, typename std::enable_if< std::is_arithmetic< TPixelType >::value >::type >
-    {
-    using PixelType = TPixelType;
-    static constexpr TSizeValueType Length = 1;
-    static constexpr Eigen::Index ColorIndexSuppressedByHematoxylin = -1;
-    static constexpr Eigen::Index ColorIndexSuppressedByEosin = -1;
-    static PixelType pixelInstance( unsigned size ) { return PixelType {}; }
-    };
-  // If the pixel type is RGBPixel
-  template< typename TSizeValueType, typename TScalar>
-  struct PixelHelper< TSizeValueType, itk::RGBPixel< TScalar >, void >
-    {
-    using PixelType = itk::RGBPixel< TScalar >;
-    static constexpr TSizeValueType Length = PixelType::Length;
-    static constexpr Eigen::Index ColorIndexSuppressedByHematoxylin = 0;
-    static constexpr Eigen::Index ColorIndexSuppressedByEosin = 1;
-    static PixelType pixelInstance( unsigned size ) { return PixelType {}; }
-    };
-  // If the pixel type is RGBAPixel
-  template< typename TSizeValueType, typename TScalar>
-  struct PixelHelper< TSizeValueType, itk::RGBAPixel< TScalar >, void >
-    {
-    // With RGBA, A (alpha) is an opacity, not a color.  It should be
-    // faithfully copied to the output, but otherwise ignored!!!
-    using PixelType = itk::RGBAPixel< TScalar >;
-    static constexpr TSizeValueType Length = PixelType::Length;
-    static constexpr Eigen::Index ColorIndexSuppressedByHematoxylin = 0;
-    static constexpr Eigen::Index ColorIndexSuppressedByEosin = 1;
-    static PixelType pixelInstance( unsigned size ) { return PixelType {}; }
-    };
-  // If the pixel type is Vector
-  template< typename TSizeValueType, typename TScalar, unsigned int NVectorDimension >
-  struct PixelHelper< TSizeValueType, itk::Vector< TScalar, NVectorDimension >, void >
-    {
-    using PixelType = itk::Vector< TScalar, NVectorDimension >;
-    static constexpr TSizeValueType Length = PixelType::Length;
-    static constexpr Eigen::Index ColorIndexSuppressedByHematoxylin = -1;
-    static constexpr Eigen::Index ColorIndexSuppressedByEosin = -1;
-    static PixelType pixelInstance( unsigned size ) { return PixelType {}; }
-    };
-  // If the pixel type is CovariantVector
-  template< typename TSizeValueType, typename TScalar, unsigned int NVectorDimension >
-  struct PixelHelper< TSizeValueType, itk::CovariantVector< TScalar, NVectorDimension >, void >
-    {
-    using PixelType = itk::CovariantVector< TScalar, NVectorDimension >;
-    static constexpr TSizeValueType Length = PixelType::Length;
-    static constexpr Eigen::Index ColorIndexSuppressedByHematoxylin = -1;
-    static constexpr Eigen::Index ColorIndexSuppressedByEosin = -1;
-    static PixelType pixelInstance( unsigned size ) { return PixelType {}; }
-    };
-  static_assert( 2 / PixelHelper< SizeValueType, PixelType >::Length < 1, "Images need at least 3 colors" );
 
 private:
   static constexpr CalcElementType epsilon0 {1e-3}; // a small matrix.array_inf_norm() value
