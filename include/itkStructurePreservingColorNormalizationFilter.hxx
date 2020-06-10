@@ -125,7 +125,7 @@ StructurePreservingColorNormalizationFilter< TImage >
     RegionConstIterator inputIter {inputPtr, inputPtr->GetRequestedRegion()};
     // A runtime check for number of colors is needed for a
     // VectorImage.
-    if constexpr( Self::PixelHelper< PixelType >::NumberOfDimensions < 0 )
+    if /*constexpr*/( Self::PixelHelper< PixelType >::NumberOfDimensions < 0 )
       {
       inputIter.GoToBegin();
       m_NumberOfDimensions = inputIter.Get().Size();
@@ -160,7 +160,7 @@ StructurePreservingColorNormalizationFilter< TImage >
     // For VectorImage, check that number of colors is right in the
     // newly supplied reference image
     RegionConstIterator referIter {referPtr, referPtr->GetRequestedRegion()};
-    if constexpr( Self::PixelHelper< PixelType >::NumberOfDimensions < 0 )
+    if /*constexpr*/( Self::PixelHelper< PixelType >::NumberOfDimensions < 0 )
       {
       referIter.GoToBegin();
       itkAssertOrThrowMacro( m_NumberOfColors == referIter.Get().Size(),
@@ -717,7 +717,8 @@ StructurePreservingColorNormalizationFilter< TImage >
 template< typename TImage >
 void
 StructurePreservingColorNormalizationFilter< TImage >
-::NMFsToImage( const CalcMatrixType &inputH, const PixelTypeForColorsOnly &inputUnstained, const CalcMatrixType &referH, const PixelTypeForColorsOnly &referUnstained, RegionIterator &outputIter ) const
+::NMFsToImage( const CalcMatrixType &inputH, const PixelTypeForColorsOnly &inputUnstained, const CalcMatrixType &referH, const PixelTypeForColorsOnly &referUnstained,
+  RegionIterator &outputIter ) const
 {
   // Read in corresponding part of the input region.
   const SizeType size = outputIter.GetRegion().GetSize();

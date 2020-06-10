@@ -237,7 +237,7 @@ protected:
   // we use the more restrictive Eigen::Matrix< ... > declarations, so
   // we have the more lax TMatrix declarations available as
   // alternates.
-#define STRUCTUREPRESERVINGCOLORNORMALIZATIONFILTER_STRICT_EIGEN3_ITERATORS 0
+#define STRUCTUREPRESERVINGCOLORNORMALIZATIONFILTER_STRICT_EIGEN3_ITERATORS 1
 #if STRUCTUREPRESERVINGCOLORNORMALIZATIONFILTER_STRICT_EIGEN3_ITERATORS
   template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
   static _Scalar *begin( Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix );
