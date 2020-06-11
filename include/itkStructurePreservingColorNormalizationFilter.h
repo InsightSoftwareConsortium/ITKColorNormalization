@@ -87,9 +87,17 @@ public:
   // case it might be better to have NumberOfStains be a template
   // parameter or a setable class member.
   static constexpr SizeValueType NumberOfStains {2};
+  // Parameters for subroutines
+  static constexpr SizeValueType maxNumberOfIterations {0}; // For Virtanen's non-negative matrix factorization algorithm.
+  static constexpr SizeValueType maxNumberOfRows {100000}; // Select a subset of the pixels if the image has more than this
+  static constexpr CalcElementType SecondPassDistinguishersThreshold {0.90};
   static constexpr CalcElementType BrightPercentileLevel {0.80};
-  static constexpr CalcElementType BrightPercentageLevel {0.70};
+  static constexpr CalcElementType BrightPercentageLevel {0.50};
   static constexpr CalcElementType VeryDarkPercentileLevel {0.01};
+  static constexpr CalcElementType epsilon0 {1e-2}; // a small matrix.array_inf_norm() value
+  static constexpr CalcElementType epsilon1 {1e-6}; // a very small matrix element
+  static constexpr CalcElementType epsilon2 {1e-12}; // a very small squared magnitude for a vector.
+  static constexpr CalcElementType lambda {0.00}; // For Lasso penalty.
 
   // We have special cases for different pixel types, including: (1)
   // we refuse to process fewer than 3 colors (at compile time where
@@ -277,13 +285,6 @@ protected:
   Eigen::Index m_ColorIndexSuppressedByEosin;
 
 private:
-  static constexpr CalcElementType epsilon0 {1e-3}; // a small matrix.array_inf_norm() value
-  static constexpr CalcElementType epsilon1 {1e-6}; // a very small matrix element
-  static constexpr CalcElementType epsilon2 {1e-12}; // a very small squared magnitude for a vector.
-  static constexpr CalcElementType lambda {0.01}; // For Lasso penalty.
-  static constexpr SizeValueType maxNumberOfIterations {0}; // For Virtanen's non-negative matrix factorization algorithm.
-  static constexpr SizeValueType maxNumberOfRows {100000}; // Select a subset of the pixels if the image has more than this
-
 
 #ifdef ITK_USE_CONCEPT_CHECKING
   // Add concept checking such as

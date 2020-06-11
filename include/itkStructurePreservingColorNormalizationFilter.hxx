@@ -254,7 +254,7 @@ StructurePreservingColorNormalizationFilter< TImage >
     }
 
   // Improve matrixH using Virtanen's algorithm
-  { std::ostringstream mesg; mesg << "matrixH before VirtanenEuclidean = " << std::endl << matrixH << std::endl; std::cout << mesg.str() << std::flush; }
+  // { std::ostringstream mesg; mesg << "matrixH before VirtanenEuclidean = " << std::endl << matrixH << std::endl; std::cout << mesg.str() << std::flush; }
     {
     CalcMatrixType matrixW;     // Could end up large.
     this->VirtanenEuclidean( matrixBrightV, matrixW, matrixH );
@@ -263,9 +263,9 @@ StructurePreservingColorNormalizationFilter< TImage >
   // Rescale each row of matrixH so that the
   // ( 100-VeryDarkPercentileLevel ) value of each column of matrixW is
   // 1.0.
-  { std::ostringstream mesg; mesg << "matrixH before NormalizeMatrixH = " << std::endl << matrixH << std::endl; std::cout << mesg.str() << std::flush; }
+  // { std::ostringstream mesg; mesg << "matrixH before NormalizeMatrixH = " << std::endl << matrixH << std::endl; std::cout << mesg.str() << std::flush; }
   this->NormalizeMatrixH( matrixDarkV, unstainedPixel, matrixH );
-  { std::ostringstream mesg; mesg << "matrixH at end = " << std::endl << matrixH << std::endl; std::cout << mesg.str() << std::flush; }
+  // { std::ostringstream mesg; mesg << "matrixH at end = " << std::endl << matrixH << std::endl; std::cout << mesg.str() << std::flush; }
 
   return 0;
 }
@@ -457,7 +457,7 @@ StructurePreservingColorNormalizationFilter< TImage >
     // those that are at least 80% as far as the best.  ( Note that
     // self could still be best, but not always. )
     const CalcColVectorType dotProducts {normV * normV.row( firstPassDistinguisherIndices[distinguisher] ).transpose()};
-    const CalcElementType threshold {*std::max_element( Self::cbegin( dotProducts ), Self::cend( dotProducts ) ) * 999 / 1000};
+    const CalcElementType threshold {*std::max_element( Self::cbegin( dotProducts ), Self::cend( dotProducts ) ) * SecondPassDistinguishersThreshold};
     CalcRowVectorType cumulative {CalcRowVectorType::Constant( 1, normVStart.cols(), 0.0 )};
     SizeValueType numberOfContributions {0};
     for( Eigen::Index row = 0; row < dotProducts.size(); ++row )
@@ -534,7 +534,7 @@ StructurePreservingColorNormalizationFilter< TImage >
     return 1;                   // we failed
     }
 
-  std::cout << "distinguishers = " << distinguishers << std::endl << std::flush;
+  // { std::ostringstream mesg; mesg << "distinguishers = " << std::endl << distinguishers << std::endl; std::cout << mesg.str() << std::flush; }
   unstainedPixel = distinguishers.row( unstainedIndex );
   const CalcRowVectorType logUnstained {unstainedPixel.unaryExpr( CalcUnaryFunctionPointer( std::log ) )};
   const CalcRowVectorType logHematoxylin {logUnstained - distinguishers.row( hematoxylinIndex ).unaryExpr( CalcUnaryFunctionPointer( std::log ) )};
@@ -627,7 +627,8 @@ StructurePreservingColorNormalizationFilter< TImage >
   // matrixH.  Note that parentheses optimize the order of matrix
   // chain multiplications and affect the speed of this method.
   CalcMatrixType previousMatrixW {matrixW};
-  for( SizeValueType loopIter {0}; loopIter < maxNumberOfIterations; ++loopIter )
+  SizeValueType loopIter {0};
+  for( ; loopIter < maxNumberOfIterations; ++loopIter )
     {
     // Lasso term "lambda" insertion is possibly in a novel way.
     matrixW = (
@@ -650,6 +651,7 @@ StructurePreservingColorNormalizationFilter< TImage >
       previousMatrixW = matrixW;
       }
     }
+  // { std::ostringstream mesg; mesg << "Executed = " << loopIter << " iterations of VirtanenEuclidean" << std::endl; std::cout << mesg.str() << std::flush; }
 
   // Round off values in the response, so that numbers are quite small
   // are set to zero.
@@ -679,7 +681,8 @@ StructurePreservingColorNormalizationFilter< TImage >
   const CalcRowVectorType firstOnes {CalcRowVectorType::Constant( 1, matrixV.rows(), 1.0 )};
   const CalcColVectorType lastOnes {CalcColVectorType::Constant( matrixV.cols(), 1, 1.0 )};
   CalcMatrixType previousMatrixW {matrixW};
-  for( SizeValueType loopIter {0}; loopIter < maxNumberOfIterations; ++loopIter )
+  SizeValueType loopIter {0};
+  for( ; loopIter < maxNumberOfIterations; ++loopIter )
     {
     matrixW = (
       matrixW.array()
@@ -699,6 +702,7 @@ StructurePreservingColorNormalizationFilter< TImage >
       previousMatrixW = matrixW;
       }
     }
+  // { std::ostringstream mesg; mesg << "Executed = " << loopIter << " iterations of VirtanenKLDivergence" << std::endl; std::cout << mesg.str() << std::flush; }
 
   // Round off values in the response, so that numbers are quite small
   // are set to zero.
@@ -866,6 +870,21 @@ StructurePreservingColorNormalizationFilter< TImage >
 ::NumberOfStains;
 
 template< typename TImage >
+constexpr typename StructurePreservingColorNormalizationFilter< TImage >::SizeValueType
+StructurePreservingColorNormalizationFilter< TImage >
+::maxNumberOfIterations;
+
+template< typename TImage >
+constexpr typename StructurePreservingColorNormalizationFilter< TImage >::SizeValueType
+StructurePreservingColorNormalizationFilter< TImage >
+::maxNumberOfRows;
+
+template< typename TImage >
+constexpr typename StructurePreservingColorNormalizationFilter< TImage >::CalcElementType
+StructurePreservingColorNormalizationFilter< TImage >
+::SecondPassDistinguishersThreshold;
+
+template< typename TImage >
 constexpr typename StructurePreservingColorNormalizationFilter< TImage >::CalcElementType
 StructurePreservingColorNormalizationFilter< TImage >
 ::BrightPercentileLevel;
@@ -899,16 +918,6 @@ template< typename TImage >
 constexpr typename StructurePreservingColorNormalizationFilter< TImage >::CalcElementType
 StructurePreservingColorNormalizationFilter< TImage >
 ::lambda;
-
-template< typename TImage >
-constexpr typename StructurePreservingColorNormalizationFilter< TImage >::SizeValueType
-StructurePreservingColorNormalizationFilter< TImage >
-::maxNumberOfIterations;
-
-template< typename TImage >
-constexpr typename StructurePreservingColorNormalizationFilter< TImage >::SizeValueType
-StructurePreservingColorNormalizationFilter< TImage >
-::maxNumberOfRows;
 
 } // end namespace itk
 
