@@ -35,7 +35,7 @@ StructurePreservingColorNormalizationFilter< TImage >
     m_ColorIndexSuppressedByEosin( Self::PixelHelper< PixelType >::ColorIndexSuppressedByEosin )
 {
   // The number of colors had better be at least 3 or be unknown
-  // (which is indicated with the value -1).
+  // ( which is indicated with the value -1 ).
   static_assert( 2 / PixelHelper< PixelType >::NumberOfColors < 1, "Images need at least 3 colors" );
 }
 
@@ -49,6 +49,17 @@ StructurePreservingColorNormalizationFilter< TImage >
 
   os << indent << "ColorIndexSuppressedByHematoxylin: " << m_ColorIndexSuppressedByHematoxylin << std::endl
      << indent << "ColorIndexSuppressedByEosin: " << m_ColorIndexSuppressedByEosin << std::endl;
+}
+
+
+template< typename TImage >
+void
+StructurePreservingColorNormalizationFilter< TImage >
+::VerifyInputInformation() const
+{
+  // It does not matter whether the input and reference images
+  // represent the same physical location, so do *not* call the
+  // Superclass::VerifyInputInformation that enforces that they do.
 }
 
 
@@ -136,11 +147,11 @@ StructurePreservingColorNormalizationFilter< TImage >
         RegionConstIterator referIter {m_referPtr, m_referPtr->GetRequestedRegion()};
         referIter.GoToBegin();
         itkAssertOrThrowMacro( m_NumberOfColors == referIter.Get().Size(),
-          "The (cached) reference image needs its number of colors to be exactly the same as the input image to be normalized" );
+          "The ( cached ) reference image needs its number of colors to be exactly the same as the input image to be normalized" );
         }
       }
 
-    m_inputUnstainedPixel = Self::PixelHelper< PixelType >::pixelForColorsOnly( m_NumberOfColors );
+    m_inputUnstainedPixel = CalcRowVectorType {1, m_NumberOfColors};
 
     if( this->ImageToNMF( inputIter, m_inputH, m_inputUnstainedPixel ) == 0 )
       {
@@ -166,7 +177,7 @@ StructurePreservingColorNormalizationFilter< TImage >
       itkAssertOrThrowMacro( m_NumberOfColors == referIter.Get().Size(),
         "The reference image needs its number of colors to be exactly the same as the input image to be normalized" );
       }
-    m_referUnstainedPixel = Self::PixelHelper< PixelType >::pixelForColorsOnly( m_NumberOfColors );
+    m_referUnstainedPixel = CalcRowVectorType {1, m_NumberOfColors};
     if( this->ImageToNMF( referIter, m_referH, m_referUnstainedPixel ) == 0 )
       {
       m_referPtr = referPtr;
@@ -205,13 +216,15 @@ StructurePreservingColorNormalizationFilter< TImage >
   RegionIterator outputIter {outputPtr, outputRegion};
 
   this->NMFsToImage( m_inputH, m_inputUnstainedPixel, m_referH, m_referUnstainedPixel, outputIter );
+  // Should we somehow make sure that the output image inherits the
+  // position, spacing, orientation, etc. from m_inputPtr?!!!
 }
 
 
 template< typename TImage >
 int
 StructurePreservingColorNormalizationFilter< TImage >
-::ImageToNMF( RegionConstIterator &inIter, CalcMatrixType &matrixH, PixelTypeForColorsOnly &unstainedPixel ) const
+::ImageToNMF( RegionConstIterator &inIter, CalcMatrixType &matrixH, CalcRowVectorType &unstainedPixel ) const
 {
   // To maintain locality of memory references, we are using
   // numberOfPixels as the number of rows rather than as the number of
@@ -248,7 +261,7 @@ StructurePreservingColorNormalizationFilter< TImage >
     }
 
   // Rescale each row of matrixH so that the
-  // (100-VeryDarkPercentileLevel) value of each column of matrixW is
+  // ( 100-VeryDarkPercentileLevel ) value of each column of matrixW is
   // 1.0.
   { std::ostringstream mesg; mesg << "matrixH before NormalizeMatrixH = " << std::endl << matrixH << std::endl; std::cout << mesg.str() << std::flush; }
   this->NormalizeMatrixH( matrixDarkV, unstainedPixel, matrixH );
@@ -270,6 +283,7 @@ StructurePreservingColorNormalizationFilter< TImage >
 
   SizeValueType numberOfRows = std::min( numberOfPixels, maxNumberOfRows );
 
+  // To avoid zeros, every color intensity is incremented.
   CalcMatrixType matrixV {numberOfRows, m_NumberOfColors};
   for( inIter.GoToBegin(); !inIter.IsAtEnd(); ++inIter )
     {
@@ -279,15 +293,10 @@ StructurePreservingColorNormalizationFilter< TImage >
       PixelType pixelValue = inIter.Get();
       for( Eigen::Index color = 0; color < m_NumberOfColors; ++color )
         {
-        matrixV( numberOfRows, color ) = pixelValue[color];
+        matrixV( numberOfRows, color ) = pixelValue[color] + CalcElementType( 1.0 );
         }
       }
     }
-
-  // We do not want trouble with a value near zero ( when we take its
-  // logarithm ) so we add a little to each value now.
-  const CalcElementType nearZero {matrixV.lpNorm< Eigen::Infinity >() * epsilon1};
-  matrixV = ( matrixV.array() + nearZero ).matrix();
 
   // Of the randomly chosen pixels, keep only those that are bright
   // enough or dark enough to be useful.
@@ -306,25 +315,18 @@ StructurePreservingColorNormalizationFilter< TImage >
   // For finding the brightest pixels, find the specified percentile
   // threshold.
   CalcColVectorType brightRearranged {intensityOfPixels};
-  SizeValueType const BrightPercentilePosition {static_cast< SizeValueType >( ( brightRearranged.size() - 1 ) * BrightPercentileLevel )};
-  std::nth_element( Self::begin( brightRearranged ), Self::begin( brightRearranged ) + BrightPercentilePosition, Self::end( brightRearranged ) );
-  const CalcElementType BrightPercentileThreshold {brightRearranged( BrightPercentilePosition )};
+  SizeValueType const brightPercentilePosition {static_cast< SizeValueType >( ( brightRearranged.size() - 1 ) * BrightPercentileLevel )};
+  std::nth_element( Self::begin( brightRearranged ), Self::begin( brightRearranged ) + brightPercentilePosition, Self::end( brightRearranged ) );
+  const CalcElementType brightPercentileThreshold {brightRearranged( brightPercentilePosition )};
 
   // For finding the brightest pixels, find specified fraction of
-  // maximum bright.
-  const CalcElementType BrightPercentageThreshold {BrightPercentageLevel * *std::max_element( Self::cbegin( intensityOfPixels ), Self::cend( intensityOfPixels ) )};
+  // maximum brightness.
+  const CalcElementType brightPercentageThreshold {BrightPercentageLevel * *std::max_element( Self::cbegin( intensityOfPixels ), Self::cend( intensityOfPixels ) )};
 
   // For finding the brightest pixels, we will keep those pixels that
   // pass at least one of the above bright thresholds.
-  const CalcElementType brightThreshold {std::min( BrightPercentileThreshold, BrightPercentageThreshold )};
-
-  // For finding the darkest pixels, find the specified percentile
-  // threshold.
-  CalcColVectorType darkRearranged {intensityOfPixels};
-  SizeValueType const DarkPercentilePosition {static_cast< SizeValueType >( ( darkRearranged.size() - 1 ) * DarkPercentileLevel )};
-  std::nth_element( Self::begin( darkRearranged ), Self::begin( darkRearranged ) + DarkPercentilePosition, Self::end( darkRearranged ) );
-  const CalcElementType DarkPercentileThreshold {darkRearranged( DarkPercentilePosition )};
-  const CalcElementType darkThreshold {DarkPercentileThreshold};
+  const CalcElementType brightThreshold {std::min( brightPercentileThreshold, brightPercentageThreshold )};
+  const CalcElementType darkThreshold { brightPercentageThreshold };
 
   SizeValueType numberOfBrightRows {0};
   SizeValueType numberOfDarkRows {0};
@@ -514,7 +516,7 @@ StructurePreservingColorNormalizationFilter< TImage >
 template< typename TImage >
 int
 StructurePreservingColorNormalizationFilter< TImage >
-::DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, PixelTypeForColorsOnly &unstainedPixel, CalcMatrixType &matrixH ) const
+::DistinguishersToNMFSeeds( const CalcMatrixType &distinguishers, CalcRowVectorType &unstainedPixel, CalcMatrixType &matrixH ) const
 {
   matrixH = CalcMatrixType {NumberOfStains, m_NumberOfColors};
 
@@ -532,12 +534,9 @@ StructurePreservingColorNormalizationFilter< TImage >
     return 1;                   // we failed
     }
 
-  const CalcRowVectorType unstainedCalcPixel {distinguishers.row( unstainedIndex )};
-  for( Eigen::Index color = 0; color < m_NumberOfColors; ++ color )
-    {
-    unstainedPixel[color] = unstainedCalcPixel( color ); // return value
-    }
-  const CalcRowVectorType logUnstained {unstainedCalcPixel.unaryExpr( CalcUnaryFunctionPointer( std::log ) )};
+  std::cout << "distinguishers = " << distinguishers << std::endl << std::flush;
+  unstainedPixel = distinguishers.row( unstainedIndex );
+  const CalcRowVectorType logUnstained {unstainedPixel.unaryExpr( CalcUnaryFunctionPointer( std::log ) )};
   const CalcRowVectorType logHematoxylin {logUnstained - distinguishers.row( hematoxylinIndex ).unaryExpr( CalcUnaryFunctionPointer( std::log ) )};
   const CalcRowVectorType logEosin {logUnstained - distinguishers.row( eosinIndex ).unaryExpr( CalcUnaryFunctionPointer( std::log ) )};
   // Set rows of matrixH to reflect hematoxylin and eosin.
@@ -584,35 +583,29 @@ StructurePreservingColorNormalizationFilter< TImage >
 template< typename TImage >
 void
 StructurePreservingColorNormalizationFilter< TImage >
-::NormalizeMatrixH( const CalcMatrixType &matrixDarkVIn, const PixelTypeForColorsOnly &unstainedPixel, CalcMatrixType &matrixH ) const
+::NormalizeMatrixH( const CalcMatrixType &matrixDarkVIn, const CalcRowVectorType &unstainedPixel, CalcMatrixType &matrixH ) const
 {
   const CalcColVectorType firstOnes {CalcColVectorType::Constant( matrixDarkVIn.rows(), 1, 1.0 )};
 
   // Compute the VeryDarkPercentileLevel percentile of a stain's
-  // negative(matrixW) column.  This a dark value due to its being the
-  // (100 - VeryDarkPercentileLevel) among quantities of stain.
-  CalcRowVectorType logUnstainedCalcPixel {m_NumberOfColors};
-  for( Eigen::Index color = 0; color < m_NumberOfColors; ++color )
-    {
-    logUnstainedCalcPixel( color ) = std::log( static_cast< CalcElementType >( unstainedPixel[color] ) );
-    }
+  // negative( matrixW ) column.  This a dark value due to its being the
+  // ( 100 - VeryDarkPercentileLevel ) among quantities of stain.
+  CalcRowVectorType logUnstainedCalcPixel = unstainedPixel.unaryExpr( CalcUnaryFunctionPointer( std::log ) );
   CalcMatrixType matrixDarkV {matrixDarkVIn};
-  const CalcElementType nearZero {matrixDarkV.lpNorm< Eigen::Infinity >() * epsilon1};
-  matrixDarkV = ( matrixDarkV.array() + nearZero ).matrix();
-  matrixDarkV = ( firstOnes * logUnstainedCalcPixel) - matrixDarkV.unaryExpr( CalcUnaryFunctionPointer( std::log ) );
+  matrixDarkV = ( firstOnes * logUnstainedCalcPixel ) - matrixDarkV.unaryExpr( CalcUnaryFunctionPointer( std::log ) );
 
   const auto clip = [] ( const CalcElementType &x )
     {
     return std::max( CalcElementType( 0.0 ), x );
     };
-  CalcMatrixType negativeMatrixW = ( ( matrixDarkV * matrixH.transpose() ).array() - lambda ).unaryExpr( clip ).matrix() * ( - matrixH * matrixH.transpose() ).inverse();
+  CalcMatrixType negativeMatrixW = -( ( ( matrixDarkV * matrixH.transpose() ).array() - lambda ).unaryExpr( clip ).matrix() * ( matrixH * matrixH.transpose() ).inverse() ).unaryExpr( clip );
   for( Eigen::Index stain = 0; stain < NumberOfStains; ++stain )
     {
     CalcColVectorType columnW {negativeMatrixW.col( stain )};
-    SizeValueType const VeryDarkPercentilePosition
-      {static_cast< SizeValueType >( ( columnW.size() - 1 ) * VeryDarkPercentileLevel / DarkPercentileLevel )};
-    std::nth_element( Self::begin( columnW ), Self::begin( columnW ) + VeryDarkPercentilePosition, Self::end( columnW ) );
-    const CalcElementType VeryDarkPercentileThreshold {-columnW( VeryDarkPercentilePosition )};
+    SizeValueType const veryDarkPercentilePosition
+      {static_cast< SizeValueType >( ( columnW.size() - 1 ) * VeryDarkPercentileLevel )};
+    std::nth_element( Self::begin( columnW ), Self::begin( columnW ) + veryDarkPercentilePosition, Self::end( columnW ) );
+    const CalcElementType VeryDarkPercentileThreshold {-columnW( veryDarkPercentilePosition )};
     matrixH.row( stain ) *= VeryDarkPercentileThreshold;
     }
 }
@@ -717,8 +710,7 @@ StructurePreservingColorNormalizationFilter< TImage >
 template< typename TImage >
 void
 StructurePreservingColorNormalizationFilter< TImage >
-::NMFsToImage( const CalcMatrixType &inputH, const PixelTypeForColorsOnly &inputUnstained, const CalcMatrixType &referH, const PixelTypeForColorsOnly &referUnstained,
-  RegionIterator &outputIter ) const
+::NMFsToImage( const CalcMatrixType &inputH, const CalcRowVectorType &inputUnstained, const CalcMatrixType &referH, const CalcRowVectorType &referUnstained, RegionIterator &outputIter ) const
 {
   // Read in corresponding part of the input region.
   const SizeType size = outputIter.GetRegion().GetSize();
@@ -734,52 +726,38 @@ StructurePreservingColorNormalizationFilter< TImage >
       {
       ++inputIter;
       }
+    // Copy the input pixel into our working matrix.
     PixelType pixelValue = inputIter.Get();
     for( Eigen::Index color = 0; color < m_NumberOfColors; ++color )
       {
-      matrixV( pixelIndex, color ) = pixelValue[color];
+      matrixV( pixelIndex, color ) = static_cast< CalcElementType >( pixelValue[color] );
       }
     }
 
   // Convert matrixV using the inputUnstained pixel and a call to
   // logarithm.
-  CalcRowVectorType logInputUnstained {1, m_NumberOfColors};
-  CalcRowVectorType logReferUnstained {1, m_NumberOfColors};
-  for( Eigen::Index color = 0; color < m_NumberOfColors; ++color )
-    {
-    logInputUnstained[color] = std::log( CalcElementType( inputUnstained[color] ) );
-    logReferUnstained[color] = std::log( CalcElementType( referUnstained[color] ) );
-    }
-
-    {
-    const CalcElementType nearZero {matrixV.lpNorm< Eigen::Infinity >() * epsilon1};
-    matrixV = ( matrixV.array() + nearZero ).matrix();
-    }
+  CalcRowVectorType logInputUnstained = inputUnstained.unaryExpr( CalcUnaryFunctionPointer( std::log ) );
+  CalcRowVectorType logReferUnstained = referUnstained.unaryExpr( CalcUnaryFunctionPointer( std::log ) );
   const CalcColVectorType firstOnes {CalcColVectorType::Constant( numberOfPixels, 1, 1.0 )};
   matrixV = ( firstOnes * logInputUnstained ) - matrixV.unaryExpr( CalcUnaryFunctionPointer( std::log ) );
-  const auto clip = [] ( const CalcElementType &x )
+
+  // Switch from inputH to referH.
     {
-    return std::max( CalcElementType( 0.0 ), x );
-    };
-  matrixV = matrixV.unaryExpr( clip );
-    {
-    const CalcElementType nearZero {matrixV.lpNorm< Eigen::Infinity >() * epsilon1};
-    matrixV = ( matrixV.array() + nearZero ).matrix();
+    const auto clip = [] ( const CalcElementType &x )
+      {
+      return std::max( CalcElementType( 0.0 ), x );
+      };
+    CalcMatrixType matrixW = ( ( ( matrixV * inputH.transpose() ).array() - lambda ).unaryExpr( clip ).matrix() * ( inputH * inputH.transpose() ).inverse() ).unaryExpr( clip );
+    matrixV = matrixW * referH;
     }
-
-  // Find the associated matrixW
-  CalcMatrixType matrixW = ( ( matrixV * inputH.transpose() ).array() - lambda ).matrix() * ( inputH * inputH.transpose() ).inverse();
-
-  // Use the matrixW with referH to compute updated values for
-  // matrixV.
-  matrixV = matrixW * referH;
 
   // Convert matrixV using exponentiation and the referUnstained pixel.
   matrixV = ( ( firstOnes * logReferUnstained ) - matrixV ).unaryExpr( CalcUnaryFunctionPointer( std::exp ) );
-
-  PixelType pixelValue = Self::PixelHelper< PixelType >::pixelOfAllDimensions( m_NumberOfDimensions );
+  PixelType pixelValue = Self::PixelHelper< PixelType >::pixelInstance( m_NumberOfDimensions );
   outputIter.GoToBegin();
   inputIter.GoToBegin();
+  constexpr CalcElementType upperbound = std::numeric_limits< PixelValueType >::max();
+  constexpr CalcElementType lowerbound = std::numeric_limits< PixelValueType >::min();
   for( SizeValueType pixelIndex {0}; !outputIter.IsAtEnd(); ++outputIter, ++pixelIndex )
     {
     while ( inputIter.GetIndex() != outputIter.GetIndex() )
@@ -788,7 +766,7 @@ StructurePreservingColorNormalizationFilter< TImage >
       }
     for( Eigen::Index color = 0; color < m_NumberOfColors; ++color )
       {
-      pixelValue[color] = matrixV( pixelIndex, color );
+      pixelValue[color] = std::max( std::min( matrixV( pixelIndex, color ) - CalcElementType( 1.0 ), upperbound ), lowerbound );
       }
     const PixelType inputPixel = inputIter.Get();
     for( Eigen::Index dim = m_NumberOfColors; dim < m_NumberOfDimensions; ++dim )
@@ -824,6 +802,7 @@ _Scalar *
 StructurePreservingColorNormalizationFilter< TImage >
 ::end( Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix )
 {
+  itkAssertOrThrowMacro( std::distance( matrix.data(), &matrix( matrix.rows() - 1, matrix.cols() - 1 ) ) + 1 == matrix.size(), "Bad array stepping" )
   return matrix.data() + matrix.size();
 }
 
@@ -833,6 +812,7 @@ const _Scalar *
 StructurePreservingColorNormalizationFilter< TImage >
 ::cend( const Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix )
 {
+  itkAssertOrThrowMacro( std::distance( matrix.data(), &matrix( matrix.rows() - 1, matrix.cols() - 1 ) ) + 1 == matrix.size(), "Bad array stepping" )
   return matrix.data() + matrix.size();
 }
 
@@ -861,6 +841,7 @@ typename StructurePreservingColorNormalizationFilter< TImage >::CalcElementType 
 StructurePreservingColorNormalizationFilter< TImage >
 ::end( TMatrix &matrix )
 {
+  itkAssertOrThrowMacro( std::distance( matrix.data(), &matrix( matrix.rows() - 1, matrix.cols() - 1 ) ) + 1 == matrix.size(), "Bad array stepping" )
   return matrix.data() + matrix.size();
 }
 
@@ -870,6 +851,7 @@ const typename StructurePreservingColorNormalizationFilter< TImage >::CalcElemen
 StructurePreservingColorNormalizationFilter< TImage >
 ::cend( const TMatrix &matrix )
 {
+  itkAssertOrThrowMacro( std::distance( matrix.data(), &matrix( matrix.rows() - 1, matrix.cols() - 1 ) ) + 1 == matrix.size(), "Bad array stepping" )
   return matrix.data() + matrix.size();
 }
 #endif
@@ -892,11 +874,6 @@ template< typename TImage >
 constexpr typename StructurePreservingColorNormalizationFilter< TImage >::CalcElementType
 StructurePreservingColorNormalizationFilter< TImage >
 ::BrightPercentageLevel;
-
-template< typename TImage >
-constexpr typename StructurePreservingColorNormalizationFilter< TImage >::CalcElementType
-StructurePreservingColorNormalizationFilter< TImage >
-::DarkPercentileLevel;
 
 template< typename TImage >
 constexpr typename StructurePreservingColorNormalizationFilter< TImage >::CalcElementType
