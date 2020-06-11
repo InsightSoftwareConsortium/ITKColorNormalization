@@ -1,16 +1,14 @@
-ITKStructurePreservingColorNormalization
+ITKColorNormalization
 =================================
 
-.. image:: https://dev.azure.com/InsightSoftwareConsortium/ITKModules/_apis/build/status/itkstructurepreservingcolornormalization?branchName=master
-    :target: https://dev.azure.com/InsightSoftwareConsortium/ITKModules/_build/latest?definitionId=8&branchName=master
-    :alt:    Build Status
+.. image:: https://github.com/InsightSoftwareConsortium/ITKColorNormalization/workflows/Build,%20test,%20package/badge.svg
 
 .. image:: https://img.shields.io/pypi/v/itk-spcn.svg
     :target: https://pypi.python.org/pypi/itk-spcn
     :alt: PyPI Version
 
 .. image:: https://img.shields.io/badge/License-Apache%202.0-blue.svg
-    :target: https://github.com/InsightSoftwareConsortium/ITKStructurePreservingColorNormalization/blob/master/LICENSE)
+    :target: https://github.com/InsightSoftwareConsortium/ITKColorNormalization/blob/master/LICENSE)
     :alt: License
 
 Overview
