@@ -16,4 +16,4 @@ Overview
 
 This performs structure preserving color normalization on an image using a reference image.
 
-By perfoming a non-negative matrix factorization on an input image and a reference image, the colors in use in the reference image are transfered to the input image.
+By performing a non-negative matrix factorization on an input image and a reference image, the colors in use in the reference image are transfered to the input image.
