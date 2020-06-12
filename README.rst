@@ -1,5 +1,5 @@
 ITKColorNormalization
-=================================
+=====================
 
 .. image:: https://github.com/InsightSoftwareConsortium/ITKColorNormalization/workflows/Build,%20test,%20package/badge.svg
 
@@ -39,11 +39,14 @@ Bibliography
 .. [AGHMMSWZ2013] Arora S, Ge R, Halpern Y, Mimno D, Moitra A, Sontag D, Wu Y, Zhu M. A Practical Algorithm for Topic
    Modeling with Provable Guarantees. Proceedings of the 30th International Conference on Machine Learning, PMLR
    28(2):280-288, 2013.
+
 .. [NCKZ2018] Newberg LA, Chen X, Kodira CD, Zavodszky MI. Computational de novo discovery of distinguishing genes for
    biological processes and cell types in complex tissues. PLoS One. 2018;13(3):e0193067. Published 2018
    Mar 1. doi:10.1371/journal.pone.0193067
+
 .. [RAS2019] Ramakrishnan G, Anand D, Sethi A.  Fast GPU-Enabled Color Normalization for Digital Pathology.
    arXiv:1901.03088. 2019 Jan.
+
 .. [VPSAWBSSEN2016] Vahadane A, Peng T, Sethi A, Albarqouni S, Wang L, Baust M, Steiger K, Schlitter AM, Esposito I,
    Navab N. Structure-Preserving Color Normalization and Sparse Stain Separation for Histological Images. IEEE Trans Med
    Imaging. 2016 Aug;35(8):1962-71. doi: 10.1109/TMI.2016.2529665. Epub 2016 Apr 27. PMID: 27164577.
