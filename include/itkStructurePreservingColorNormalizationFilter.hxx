@@ -277,7 +277,7 @@ StructurePreservingColorNormalizationFilter< TImage >
 ::ImageToMatrix( RegionConstIterator &inIter, SizeValueType numberOfPixels, CalcMatrixType &matrixBrightV, CalcMatrixType &matrixDarkV ) const
 {
   // If the image is big, take a random subset of its pixels and put them into matrixV.
-  using UniformGeneratorType = itk::Statistics::MersenneTwisterRandomVariateGenerator;
+  using UniformGeneratorType = Statistics::MersenneTwisterRandomVariateGenerator;
   UniformGeneratorType::Pointer uniformGenerator = UniformGeneratorType::New();
   uniformGenerator->Initialize( 20200609 );
 

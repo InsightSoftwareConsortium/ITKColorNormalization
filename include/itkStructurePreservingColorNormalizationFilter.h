@@ -51,9 +51,9 @@ public:
 
   using ImageType = TImage;
   using RegionType = typename ImageType::RegionType;
-  using RegionConstIterator = typename itk::ImageRegionConstIterator< ImageType >;
-  using RegionIterator = typename itk::ImageRegionIterator< ImageType >;
-  using SizeType = itk::Size< ImageType::ImageDimension >;
+  using RegionConstIterator = ImageRegionConstIterator< ImageType >;
+  using RegionIterator = ImageRegionIterator< ImageType >;
+  using SizeType = Size< ImageType::ImageDimension >;
   using SizeValueType = typename SizeType::SizeValueType;
   using PixelType = typename ImageType::PixelType;
 
@@ -136,9 +136,9 @@ public:
     };
   // For the case that the pixel type is itk::RGBPixel:
   template< typename TScalar>
-  struct PixelHelper< itk::RGBPixel< TScalar >, void >
+  struct PixelHelper< RGBPixel< TScalar >, void >
     {
-    using PixelType = itk::RGBPixel< TScalar >;
+    using PixelType = RGBPixel< TScalar >;
     using ValueType = typename PixelType::ValueType;
     static constexpr SizeValueType NumberOfDimensions = 3;
     static constexpr SizeValueType NumberOfColors = 3;
@@ -148,9 +148,9 @@ public:
     };
   // For the case that the pixel type is itk::RGBAPixel:
   template< typename TScalar>
-  struct PixelHelper< itk::RGBAPixel< TScalar >, void >
+  struct PixelHelper< RGBAPixel< TScalar >, void >
     {
-    using PixelType = itk::RGBAPixel< TScalar >;
+    using PixelType = RGBAPixel< TScalar >;
     using ValueType = typename PixelType::ValueType;
     static constexpr SizeValueType NumberOfDimensions = 4;
     static constexpr SizeValueType NumberOfColors = 3;
@@ -163,9 +163,9 @@ public:
   // will refuse to compile this case via a static_assert in the
   // constructor of StructurePreservingColorNormalizationFilter.
   template< typename TScalar, unsigned int NVectorDimension >
-  struct PixelHelper< itk::Vector< TScalar, NVectorDimension >, void >
+  struct PixelHelper< Vector< TScalar, NVectorDimension >, void >
     {
-    using PixelType = itk::Vector< TScalar, NVectorDimension >;
+    using PixelType = Vector< TScalar, NVectorDimension >;
     using ValueType = typename PixelType::ValueType;
     static constexpr SizeValueType NumberOfDimensions = NVectorDimension;
     static constexpr SizeValueType NumberOfColors = NVectorDimension;
@@ -174,9 +174,9 @@ public:
     static PixelType pixelInstance( unsigned numberOfDimensions ) { return PixelType {}; }
     };
   template< typename TScalar, unsigned int NVectorDimension >
-  struct PixelHelper< itk::CovariantVector< TScalar, NVectorDimension >, void >
+  struct PixelHelper< CovariantVector< TScalar, NVectorDimension >, void >
     {
-    using PixelType = itk::CovariantVector< TScalar, NVectorDimension >;
+    using PixelType = CovariantVector< TScalar, NVectorDimension >;
     using ValueType = typename PixelType::ValueType;
     static constexpr SizeValueType NumberOfDimensions = NVectorDimension;
     static constexpr SizeValueType NumberOfColors = NVectorDimension;
@@ -269,7 +269,7 @@ protected:
 
   // These members are for the purpose of caching results for use the
   // next time the pipeline is run.
-  itk::ModifiedTimeType m_ParametersMTime;
+  ModifiedTimeType m_ParametersMTime;
   const ImageType *m_inputPtr;
   TimeStamp m_inputTimeStamp;
   CalcMatrixType m_inputH;
@@ -288,7 +288,7 @@ private:
 
 #ifdef ITK_USE_CONCEPT_CHECKING
   // Add concept checking such as
-  // itkConceptMacro( FloatingPointPixel, ( itk::Concept::IsFloatingPoint< typename ImageType::PixelType > ) );
+  // itkConceptMacro( FloatingPointPixel, ( Concept::IsFloatingPoint< typename ImageType::PixelType > ) );
 #endif
 };
 
