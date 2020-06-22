@@ -14,7 +14,7 @@ ITKColorNormalization
 Overview
 --------
 
-This performs "Structure Preserving Color Normalization" on an H&E image using a reference image.
+This performs \"Structure Preserving Color Normalization\" on an H&E image using a reference image.
 
 H&E (hematoxylin and eosin) are stains used to color parts of cells in a histological image, often for medical diagnosis.
 Hematoxylin is a compound that stains cell nuclei a purple-blue color.  Eosin is a compound that stains extracellular matrix
@@ -41,7 +41,7 @@ Bibliography
    28(2):280-288, 2013.
 
 .. [NCKZ2018] Newberg LA, Chen X, Kodira CD, Zavodszky MI. Computational de novo discovery of distinguishing genes for
-   biological processes and cell types in complex tissues. PLoS One. 2018;13(3):e0193067. Published 2018
+   biological processes and cell types in complex tissues. PLoS One. 2018\;13(3):e0193067. Published 2018
    Mar 1. doi:10.1371/journal.pone.0193067
 
 .. [RAS2019] Ramakrishnan G, Anand D, Sethi A.  Fast GPU-Enabled Color Normalization for Digital Pathology.
@@ -49,4 +49,4 @@ Bibliography
 
 .. [VPSAWBSSEN2016] Vahadane A, Peng T, Sethi A, Albarqouni S, Wang L, Baust M, Steiger K, Schlitter AM, Esposito I,
    Navab N. Structure-Preserving Color Normalization and Sparse Stain Separation for Histological Images. IEEE Trans Med
-   Imaging. 2016 Aug;35(8):1962-71. doi: 10.1109/TMI.2016.2529665. Epub 2016 Apr 27. PMID: 27164577.
+   Imaging. 2016 Aug\;35(8):1962-71. doi: 10.1109/TMI.2016.2529665. Epub 2016 Apr 27. PMID: 27164577.
