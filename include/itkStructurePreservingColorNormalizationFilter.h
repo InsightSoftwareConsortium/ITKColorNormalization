@@ -35,10 +35,37 @@ namespace itk
 
 /** \class StructurePreservingColorNormalizationFilter
  *
- * \brief Filters a image by iterating over its pixels.
+ * \brief This filter performs "Structure Preserving Color
+ * Normalization" on an H&E image using a reference image.
  *
- * Filters a image by iterating over its pixels in a multi-threaded way
- * and {to be completed by the developer}.
+ * H&E (hematoxylin and eosin) are stains used to color parts of cells
+ * in a histological image, often for medical diagnosis. Hematoxylin
+ * is a compound that stains cell nuclei a purple-blue color. Eosin is
+ * a compound that stains extracellular matrix and cytoplasm
+ * pink. However, the exact color of purple-blue or pink can vary from
+ * image to image, and this can make comparison of images
+ * difficult. This routine addresses the issue by re-coloring one
+ * image (the first image supplied to the routine) using the color
+ * scheme of a reference image (the second image supplied to the
+ * routine).
+ *
+ * Structure Preserving Color Normalization is a technique described
+ * in [VPSAWBSSEN2016] and modified in [RAS2019]. The idea is to model
+ * the color of an image pixel as something close to pure white, which
+ * is reduced in intensity in a color-specific way via an optical
+ * absorption model that depends upon the amounts of hematoxylin and
+ * eosin that are present. Non-negative matrix factorization is used
+ * on each analyzed image to simultaneously derive the amount of
+ * hematoxylin and eosin stain at each pixel and the effective colors
+ * of each stain.
+ *
+ * The implementation here accelerates the non-negative matrix
+ * factorization by choosing the initial estimate for the color
+ * absorption characteristics using a technique mimicking that
+ * presented in [AGHMMSWZ2013] and [NCKZ2018]. This approach finds a
+ * good solution for a non-negative matrix factorization by first
+ * transforming it to the problem of finding a convex hull for a set
+ * of points in a cloud.
  *
  * \ingroup StructurePreservingColorNormalization
  *
@@ -49,6 +76,7 @@ class StructurePreservingColorNormalizationFilter : public ImageToImageFilter< T
 public:
   ITK_DISALLOW_COPY_AND_ASSIGN( StructurePreservingColorNormalizationFilter );
 
+  /** Specific class typedefs */
   using ImageType = TImage;
   using RegionType = typename ImageType::RegionType;
   using RegionConstIterator = ImageRegionConstIterator< ImageType >;
@@ -75,9 +103,19 @@ public:
   /** Standard New macro. */
   itkNewMacro( Self );
 
+  /** If the pixel type is RGB or RGBA then
+   * ColorIndexSuppressedByHematoxylin defaults to 0, indicating red.
+   * Otherwise, set ColorIndexSuppressedByHematoxylin to the index in
+   * the array of colors that indicates the color most suppressed by
+   * hematoxylin. */
   itkGetMacro( ColorIndexSuppressedByHematoxylin, Eigen::Index )
   itkSetMacro( ColorIndexSuppressedByHematoxylin, Eigen::Index )
 
+  /** If the pixel type is RGB or RGBA then
+   * ColorIndexSuppressedByEosin defaults to 1, indicating green.
+   * Otherwise, set ColorIndexSuppressedByEosin to the index in the
+   * array of colors that indicates the color most suppressed by
+   * eosin. */
   itkGetMacro( ColorIndexSuppressedByEosin, Eigen::Index )
   itkSetMacro( ColorIndexSuppressedByEosin, Eigen::Index )
 
@@ -86,24 +124,24 @@ public:
   // approach could in theory work in other circumstances.  In that
   // case it might be better to have NumberOfStains be a template
   // parameter or a setable class member.
-  static constexpr SizeValueType NumberOfStains {2};
+  static constexpr SizeValueType NumberOfStains {2}; /**< Hematoxylin and eosin; there are two stains supported. */
   // Parameters for subroutines
-  static constexpr SizeValueType maxNumberOfIterations {0}; // For Virtanen's non-negative matrix factorization algorithm.
-  static constexpr SizeValueType maxNumberOfRows {100000}; // Select a subset of the pixels if the image has more than this
-  static constexpr CalcElementType SecondPassDistinguishersThreshold {0.90};
-  static constexpr CalcElementType BrightPercentileLevel {0.80};
-  static constexpr CalcElementType BrightPercentageLevel {0.50};
-  static constexpr CalcElementType VeryDarkPercentileLevel {0.01};
-  static constexpr CalcElementType epsilon0 {1e-2}; // a small matrix.array_inf_norm() value
-  static constexpr CalcElementType epsilon1 {1e-6}; // a very small matrix element
-  static constexpr CalcElementType epsilon2 {1e-12}; // a very small squared magnitude for a vector.
-  static constexpr CalcElementType lambda {0.00}; // For Lasso penalty.
+  static constexpr SizeValueType maxNumberOfIterations {0}; /**< For Virtanen's non-negative matrix factorization algorithm. */
+  static constexpr SizeValueType maxNumberOfRows {100000}; /**< Select a subset of the pixels if the image has more than this */
+  static constexpr CalcElementType SecondPassDistinguishersThreshold {0.90}; /**< Colors at least this fraction as distance as first pass distinguisher are good substitutes for it. */
+  static constexpr CalcElementType BrightPercentileLevel {0.80}; /**< Colors that are at least this percentile in brightness are considered bright. */
+  static constexpr CalcElementType BrightPercentageLevel {0.50}; /**< Colors that are at least fraction of white's brightness are considered bright. */
+  static constexpr CalcElementType VeryDarkPercentileLevel {0.01}; /**< Intensity normalization of an image is based upon dark pixels of this percentil brightness. */
+  static constexpr CalcElementType epsilon0 {1e-2}; /**< a small matrix.array_inf_norm() value for checking convergence of a matrix */
+  static constexpr CalcElementType epsilon2 {1e-12}; /**< a very small squared magnitude for a vector, to prevent division by zero. */
+  static constexpr CalcElementType lambda {0.00}; /**< The Lasso optimization penalty. */
 
+protected:
   // We have special cases for different pixel types, including: (1)
   // we refuse to process fewer than 3 colors (at compile time where
   // possible) and (2) RBGA pixels have 4 dimensions but only 3
   // colors.  We accomplish the special cases via the PixelHelper
-  // class, similar in concept to the itk::PixelTraits class, but with
+  // class, similar in concept to the PixelTraits class, but with
   // different capabilities.
   //
   // The default: for the case that the number of colors is not
@@ -134,7 +172,7 @@ public:
     static constexpr typename Eigen::Index ColorIndexSuppressedByEosin = -1;
     static PixelType pixelInstance( unsigned numberOfDimensions ) { return PixelType {}; }
     };
-  // For the case that the pixel type is itk::RGBPixel:
+  // For the case that the pixel type is RGBPixel:
   template< typename TScalar>
   struct PixelHelper< RGBPixel< TScalar >, void >
     {
@@ -146,7 +184,7 @@ public:
     static constexpr typename Eigen::Index ColorIndexSuppressedByEosin = 1;
     static PixelType pixelInstance( unsigned numberOfDimensions ) { return PixelType {}; }
     };
-  // For the case that the pixel type is itk::RGBAPixel:
+  // For the case that the pixel type is RGBAPixel:
   template< typename TScalar>
   struct PixelHelper< RGBAPixel< TScalar >, void >
     {
@@ -158,8 +196,8 @@ public:
     static constexpr typename Eigen::Index ColorIndexSuppressedByEosin = 1;
     static PixelType pixelInstance( unsigned numberOfDimensions ) { return PixelType {}; }
     };
-  // For the cases that the pixel type is itk::Vector or
-  // itk::CovariantVector.  If NVectorDimension is not at least 3 we
+  // For the cases that the pixel type is Vector or
+  // CovariantVector.  If NVectorDimension is not at least 3 we
   // will refuse to compile this case via a static_assert in the
   // constructor of StructurePreservingColorNormalizationFilter.
   template< typename TScalar, unsigned int NVectorDimension >
@@ -185,6 +223,10 @@ public:
     static PixelType pixelInstance( unsigned numberOfDimensions ) { return PixelType {}; }
     };
 
+public:
+  // This public type depends upon the protected PixelHelper, so we
+  // must go back to "public:" here.
+  /** Additional specific class typedefs */
   using PixelValueType = typename PixelHelper< PixelType >::ValueType;
 
 protected:
@@ -227,9 +269,9 @@ protected:
 
   void NormalizeMatrixH( const CalcMatrixType &matrixDarkV, const CalcRowVectorType &unstainedPixel, CalcMatrixType &matrixH ) const;
 
-  static void VirtanenEuclidean( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH );
+  static void VirtanenNMFEuclidean( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH );
 
-  static void VirtanenKLDivergence( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH );
+  static void VirtanenNMFKLDivergence( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH );
 
   void NMFsToImage( const CalcMatrixType &inputH, const CalcRowVectorType &inputUnstained, const CalcMatrixType &referH, const CalcRowVectorType &referUnstained, RegionIterator &out ) const;
 
@@ -270,11 +312,10 @@ protected:
   // These members are for the purpose of caching results for use the
   // next time the pipeline is run.
   ModifiedTimeType m_ParametersMTime;
-  const ImageType *m_inputPtr;
-  TimeStamp m_inputTimeStamp;
+  const ImageType *m_input;
   CalcMatrixType m_inputH;
   CalcRowVectorType m_inputUnstainedPixel;
-  const ImageType *m_referPtr;
+  const ImageType *m_refer;
   TimeStamp m_referTimeStamp;
   CalcMatrixType m_referH;
   CalcRowVectorType m_referUnstainedPixel;
