@@ -124,17 +124,27 @@ public:
   // approach could in theory work in other circumstances.  In that
   // case it might be better to have NumberOfStains be a template
   // parameter or a setable class member.
-  static constexpr SizeValueType NumberOfStains {2}; /**< Hematoxylin and eosin; there are two stains supported. */
-  // Parameters for subroutines
-  static constexpr SizeValueType maxNumberOfIterations {0}; /**< For Virtanen's non-negative matrix factorization algorithm. */
-  static constexpr SizeValueType maxNumberOfRows {100000}; /**< Select a subset of the pixels if the image has more than this */
-  static constexpr CalcElementType SecondPassDistinguishersThreshold {0.90}; /**< Colors at least this fraction as distance as first pass distinguisher are good substitutes for it. */
-  static constexpr CalcElementType BrightPercentileLevel {0.80}; /**< Colors that are at least this percentile in brightness are considered bright. */
-  static constexpr CalcElementType BrightPercentageLevel {0.50}; /**< Colors that are at least fraction of white's brightness are considered bright. */
-  static constexpr CalcElementType VeryDarkPercentileLevel {0.01}; /**< Intensity normalization of an image is based upon dark pixels of this percentil brightness. */
-  static constexpr CalcElementType epsilon0 {1e-2}; /**< a small matrix.array_inf_norm() value for checking convergence of a matrix */
-  static constexpr CalcElementType epsilon2 {1e-12}; /**< a very small squared magnitude for a vector, to prevent division by zero. */
-  static constexpr CalcElementType lambda {0.00}; /**< The Lasso optimization penalty. */
+
+  /** Hematoxylin and eosin; there are two stains supported. */
+  static constexpr SizeValueType NumberOfStains {2};
+  /** For Virtanen's non-negative matrix factorization algorithm. */
+  static constexpr SizeValueType maxNumberOfIterations {0};
+  /** Select a subset of the pixels if the image has more than this */
+  static constexpr SizeValueType maxNumberOfRows {100000};
+  /** Colors at least this fraction as distance as first pass distinguisher are good substitutes for it. */
+  static constexpr CalcElementType SecondPassDistinguishersThreshold {0.90};
+  /** Colors that are at least this percentile in brightness are considered bright. */
+  static constexpr CalcElementType BrightPercentileLevel {0.80};
+  /** Colors that are at least fraction of white's brightness are considered bright. */
+  static constexpr CalcElementType BrightPercentageLevel {0.50};
+  /** Intensity normalization of an image is based upon dark pixels of this percentil brightness. */
+  static constexpr CalcElementType VeryDarkPercentileLevel {0.01};
+  /** A small matrix.array_inf_norm() value for checking convergence of a matrix */
+  static constexpr CalcElementType epsilon0 {1e-2};
+  /** A very small squared magnitude for a vector, to prevent division by zero. */
+  static constexpr CalcElementType epsilon2 {1e-12};
+  /** The Lasso optimization penalty. */
+  static constexpr CalcElementType lambda {0.00};
 
 protected:
   // We have special cases for different pixel types, including: (1)
@@ -312,13 +322,13 @@ protected:
   // These members are for the purpose of caching results for use the
   // next time the pipeline is run.
   ModifiedTimeType m_ParametersMTime;
-  const ImageType *m_input;
-  CalcMatrixType m_inputH;
-  CalcRowVectorType m_inputUnstainedPixel;
-  const ImageType *m_refer;
-  TimeStamp m_referTimeStamp;
-  CalcMatrixType m_referH;
-  CalcRowVectorType m_referUnstainedPixel;
+  const ImageType *m_Input;
+  CalcMatrixType m_InputH;
+  CalcRowVectorType m_InputUnstainedPixel;
+  const ImageType *m_Reference;
+  TimeStamp m_ReferenceTimeStamp;
+  CalcMatrixType m_ReferenceH;
+  CalcRowVectorType m_ReferenceUnstainedPixel;
 
   Eigen::Index m_NumberOfDimensions;
   Eigen::Index m_NumberOfColors;

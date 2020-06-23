@@ -33,7 +33,7 @@ absorption characteristics using a technique mimicking that presented in [AGHMMS
 finds a good solution for a non-negative matrix factorization by first transforming it to the problem of finding a convex
 hull for a set of points in a cloud.
 
-The lead devolper of InsightSoftwareConsortium/ITKColorNormalization is `Lee Newberg <https://github.com/Leengit)>`_.
+The lead developer of InsightSoftwareConsortium/ITKColorNormalization is `Lee Newberg <https://github.com/Leengit)>`_.
 
 Installation for python
 -----------------------
@@ -47,58 +47,75 @@ itk_spcn-0.1.0-cp38-cp38-manylinux1_x86_64.whl.
 
 In a terminal session, create a python virtual environment with a command like
 
+.. code-block:: shell
+
     python -m venv /tmp/venv
 
-Make your current terminal session use the virtual envrionment with a command like the following.  Note that the line begins
+Make your current terminal session use the virtual environment with a command like the following.  Note that the line begins
 with a single \".\" followed by a space.
+
+.. code-block:: shell
 
     . /tmp/venv/bin/activate
 
 Install the wheel in the virtual environment with a command like
 
+.. code-block:: shell
+
     /tmp/venv/bin/pip install itk_spcn-0.1.0-cp38-cp38-manylinux1_x86_64.whl
 
-You can stop using the virtual environment in your terminal session with the command
+You can stop using the virtual environment in your terminal session with the following command.
+
+.. code-block:: shell
 
     deactivate
 
 Usage
 -----
 
-If you haven't already, make your current terminal session use the previously created virtual envrionment with a command like
-the following.  Note that the line begins with a single \".\" followed by a space.
+If you have not done so already, make your current terminal session use the previously created virtual environment with a
+command like the following.  Note that the line begins with a single \".\" followed by a space.
+
+.. code-block:: shell
 
     . /tmp/venv/bin/activate
 
-Launch python using your virtual environment with \"python\" or \"python3\".  To load the itk package and two images:
+Launch python using your virtual environment with \`python\` or \`python3\`.  In python, type the following to load the itk
+package and two images:
+
+.. code-block:: python
 
     import itk
+    input_image = itk.imread('path/to/input_file.mha')
+    reference_image = itk.imread('path/to/reference_file.mha')
 
-    input_image = itk.imread(\'path/to/input_file.mha\')
+You can use the eager interface for ITK.  The input_image and reference_image are processed to produce normalized_image,
+which is the input_image with the color scheme of the reference_image.  The color_index_suppressed_by_hematoxylin and
+color_index_suppressed_by_eosin arguments are optional if the input_image pixel type is RGB or RGBA.  Here you are indicating
+that the color channel most suppressed by hematoxylin is 0 (which is red for RGB and RGBA pixels) and that the color most
+suppressed by eosin is 1 (which is green for RGB and RGBA pixels)\; these are the defaults for RGB and RGBA pixels.
 
-    reference_image = itk.imread(\'path/to/reference_file.mha\')
+.. code-block:: python
 
-The function itk.StructurePreservingColorNormalizationFilter.New() uses it argument to determine the pixel type for the
-filter.  The actual image is not used at this point.
+    normalized_image = itk.structure_preserving_color_normalization_filter(
+        input_image,
+        reference_image,
+        color_index_suppressed_by_hematoxylin=0,
+        color_index_suppressed_by_eosin=1)
+
+Alternatively, create a pipeline.  The function itk.StructurePreservingColorNormalizationFilter.New() uses it argument to
+determine the pixel type for the filter\; the actual image is not used in the first line of the following.  As above, the
+calls to SetColorIndexSuppressedByHematoxylin and SetColorIndexSuppressedByEosin are optional if the pixel type is RGB or
+RGBA.
+
+.. code-block:: python
 
     spcn_filter = itk.StructurePreservingColorNormalizationFilter.New(input_image)
-
-The itk.struct_preserving_color_normalization_filter processes the input_image and reference_image to produce the
-normalizedImage, which is the input_image with the color scheme of the reference_image.  The calls to
-SetColorIndexSuppressedByHematoxylin and SetColorIndexSuppressedByEosin are optional if the pixel type is RGB or RGBA.  Here
-the spcn_filter is told that the color channel most suppressed by hematoxylin is 0 (which is red for RGB pixels) and that the
-color most suppressed by eosin is 1 (which is green for RGB pixels)\; these are the defaults for RGB and RGBA pixels.
-
     spcn_filter.SetColorIndexSuppressedByHematoxylin(0)
-
     spcn_filter.SetColorIndexSuppressedByEosin(1)
-
     spcn_filter.SetInput(0, input_image)
-
     spcn_filter.SetInput(1, reference_image)
-
-    spcn_filter.SetOutput(output_image)
-
+    spcn_filter.SetOutput(normalized_image)
     spcn_filter.Update()
 
 Bibliography
