@@ -558,11 +558,11 @@ StructurePreservingColorNormalizationFilter< TImage >
   // suppressed by eosin is indicated by
   // m_ColorIndexSuppressedByEosin.
   const CalcColVectorType redValues {distinguishers.col( m_ColorIndexSuppressedByHematoxylin )};
-  const CalcElementType * const hematoxylinputIteratorator {std::min_element( Self::cbegin( redValues ), Self::cend( redValues ) )};
-  hematoxylinIndex = std::distance( Self::cbegin( redValues ), hematoxylinputIteratorator );
+  const CalcElementType * const hematoxylinIterator {std::min_element( Self::cbegin( redValues ), Self::cend( redValues ) )};
+  hematoxylinIndex = std::distance( Self::cbegin( redValues ), hematoxylinIterator );
   const CalcColVectorType greenValues {distinguishers.col( m_ColorIndexSuppressedByEosin )};
-  const CalcElementType * const eosinputIteratorator {std::min_element( Self::cbegin( greenValues ), Self::cend( greenValues ) )};
-  eosinIndex = std::distance( Self::cbegin( greenValues ), eosinputIteratorator );
+  const CalcElementType * const eosinIterator {std::min_element( Self::cbegin( greenValues ), Self::cend( greenValues ) )};
+  eosinIndex = std::distance( Self::cbegin( greenValues ), eosinIterator );
 }
 
 
