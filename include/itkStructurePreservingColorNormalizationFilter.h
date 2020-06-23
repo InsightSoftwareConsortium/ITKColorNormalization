@@ -256,7 +256,7 @@ protected:
 
   int ImageToNMF( RegionConstIterator &iter, CalcMatrixType &matrixH, CalcRowVectorType &unstainedPixel ) const;
 
-  void ImageToMatrix( RegionConstIterator &inIter, SizeValueType numberOfPixels, CalcMatrixType &matrixBrightV, CalcMatrixType &matrixDarkV ) const;
+  void ImageToMatrix( RegionConstIterator &iter, SizeValueType numberOfPixels, CalcMatrixType &matrixBrightV, CalcMatrixType &matrixDarkV ) const;
 
   static void MatrixToDistinguishers( const CalcMatrixType &matrixV, CalcMatrixType &distinguishers );
 
@@ -283,7 +283,7 @@ protected:
 
   static void VirtanenNMFKLDivergence( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH );
 
-  void NMFsToImage( const CalcMatrixType &inputH, const CalcRowVectorType &inputUnstained, const CalcMatrixType &referH, const CalcRowVectorType &referUnstained, RegionIterator &out ) const;
+  void NMFsToImage( const CalcMatrixType &inputH, const CalcRowVectorType &inputUnstained, const CalcMatrixType &referH, const CalcRowVectorType &referUnstained, RegionIterator &outIt ) const;
 
   // Our installation of Eigen3 does not have iterators.  (They
   // arrive with Eigen 3.4.)  We define begin, cbegin, end, and cend

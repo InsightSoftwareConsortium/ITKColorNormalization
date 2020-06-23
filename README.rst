@@ -103,7 +103,7 @@ suppressed by eosin is 1 (which is green for RGB and RGBA pixels)\; these are th
         color_index_suppressed_by_hematoxylin=0,
         color_index_suppressed_by_eosin=1)
 
-Alternatively, create a pipeline.  The function itk.StructurePreservingColorNormalizationFilter.New() uses it argument to
+Alternatively, create a pipeline.  The function itk.StructurePreservingColorNormalizationFilter.New() uses its argument to
 determine the pixel type for the filter\; the actual image is not used in the first line of the following.  As above, the
 calls to SetColorIndexSuppressedByHematoxylin and SetColorIndexSuppressedByEosin are optional if the pixel type is RGB or
 RGBA.
