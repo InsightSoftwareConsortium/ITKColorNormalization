@@ -73,17 +73,17 @@ StructurePreservingColorNormalizationFilter< TImage >
 
   // Get pointers to the input image ( to be normalized ) and
   // reference image.
-  ImageType *inputPtr = const_cast< ImageType * >( this->GetInput( 0 ) );
-  ImageType *referPtr = const_cast< ImageType * >( this->GetInput( 1 ) );
+  ImageType *inputImage = const_cast< ImageType * >( this->GetInput( 0 ) );
+  ImageType *referenceImage = const_cast< ImageType * >( this->GetInput( 1 ) );
 
-  if( inputPtr != nullptr )
+  if( inputImage != nullptr )
     {
-    inputPtr->SetRequestedRegionToLargestPossibleRegion();
+    inputImage->SetRequestedRegionToLargestPossibleRegion();
     }
 
-  if( referPtr != nullptr )
+  if( referenceImage != nullptr )
     {
-    referPtr->SetRequestedRegionToLargestPossibleRegion();
+    referenceImage->SetRequestedRegionToLargestPossibleRegion();
     }
 }
 
@@ -106,8 +106,7 @@ StructurePreservingColorNormalizationFilter< TImage >
     // m_ColorIndexSuppressedByEosin has changed since we built the
     // cache, so clear the cache.  The empty cache is current as of
     // the most recent modification.
-    m_inputPtr = nullptr;
-    m_referPtr = nullptr;
+    m_Reference = nullptr;
     m_ParametersMTime = this->GetMTime();
     }
 
@@ -119,90 +118,79 @@ StructurePreservingColorNormalizationFilter< TImage >
   itkAssertOrThrowMacro( m_ColorIndexSuppressedByHematoxylin >= 0 && m_ColorIndexSuppressedByEosin >= 0,
     "Need to set ColorIndexSuppressedByHematoxylin and ColorIndexSuppressedByEosin before using StructurePreservingColorNormalizationFilter" );
 
-  // Find input and refer and make iterators for them.
-  const ImageType * const inputPtr = this->GetInput( 0 ); // image to be normalized
-  const ImageType * const referPtr = this->GetInput( 1 ); // reference image
+  // Find inputImage and referenceImage and make iterators for them.
+  const ImageType * const inputImage = this->GetInput( 0 ); // image to be normalized
+  const ImageType * const referenceImage = this->GetInput( 1 ); // reference image
   // For each of the two images, make sure that it was supplied, or
   // that we have it cached already.
-  itkAssertOrThrowMacro( inputPtr != nullptr || m_inputPtr != nullptr, "An image to be normalized needs to be supplied as input image #0" );
-  itkAssertOrThrowMacro( referPtr != nullptr || m_referPtr != nullptr, "A reference image needs to be supplied as input image #1" );
+  itkAssertOrThrowMacro( inputImage != nullptr, "An image to be normalized needs to be supplied as input image #0" );
+  itkAssertOrThrowMacro( referenceImage != nullptr || m_Reference != nullptr, "A reference image needs to be supplied as input image #1" );
 
   // For each image, if there is a supplied image and it is different
   // from what we have cached then compute stuff and cache the
   // results.  These two calls to ImageToNMF could be done
   // simultaneously.
-  if( inputPtr != nullptr && ( inputPtr != m_inputPtr || inputPtr->GetTimeStamp() != m_inputTimeStamp ) )
+  RegionConstIterator inIt {inputImage, inputImage->GetRequestedRegion()};
+  // A runtime check for number of colors is needed for a
+  // VectorImage.
+  if /*constexpr*/( Self::PixelHelper< PixelType >::NumberOfDimensions < 0 )
     {
-    RegionConstIterator inputIter {inputPtr, inputPtr->GetRequestedRegion()};
-    // A runtime check for number of colors is needed for a
-    // VectorImage.
-    if /*constexpr*/( Self::PixelHelper< PixelType >::NumberOfDimensions < 0 )
+    inIt.GoToBegin();
+    m_NumberOfDimensions = inIt.Get().Size();
+    m_NumberOfColors = m_NumberOfDimensions;
+    itkAssertOrThrowMacro( m_NumberOfColors >= 3, "Images need at least 3 colors but the input image to be normalized does not" );
+    if( referenceImage == nullptr || ( referenceImage == m_Reference && referenceImage->GetTimeStamp() == m_ReferenceTimeStamp ) )
       {
-      inputIter.GoToBegin();
-      m_NumberOfDimensions = inputIter.Get().Size();
-      m_NumberOfColors = m_NumberOfDimensions;
-      itkAssertOrThrowMacro( m_NumberOfColors >= 3, "Images need at least 3 colors but the input image to be normalized does not" );
-      if( referPtr == nullptr || ( referPtr == m_referPtr && referPtr->GetTimeStamp() == m_referTimeStamp ) )
-        {
-        RegionConstIterator referIter {m_referPtr, m_referPtr->GetRequestedRegion()};
-        referIter.GoToBegin();
-        itkAssertOrThrowMacro( m_NumberOfColors == referIter.Get().Size(),
-          "The ( cached ) reference image needs its number of colors to be exactly the same as the input image to be normalized" );
-        }
-      }
-
-    m_inputUnstainedPixel = CalcRowVectorType {1, m_NumberOfColors};
-
-    if( this->ImageToNMF( inputIter, m_inputH, m_inputUnstainedPixel ) == 0 )
-      {
-      m_inputPtr = inputPtr;
-      m_inputTimeStamp = inputPtr->GetTimeStamp();
-      }
-    else
-      {
-      // we failed
-      m_inputPtr = nullptr;
-      itkAssertOrThrowMacro( m_inputPtr != nullptr, "The image to be normalized could not be processed; does it have white, blue, and pink pixels?" )
+      RegionConstIterator refIt {m_Reference, m_Reference->GetRequestedRegion()};
+      refIt.GoToBegin();
+      itkAssertOrThrowMacro( m_NumberOfColors == refIt.Get().Size(),
+        "The ( cached ) reference image needs its number of colors to be exactly the same as the input image to be normalized" );
       }
     }
 
-  if( referPtr != nullptr && ( referPtr != m_referPtr || referPtr->GetTimeStamp() != m_referTimeStamp ) )
+  m_InputUnstainedPixel = CalcRowVectorType {1, m_NumberOfColors};
+
+  if( this->ImageToNMF( inIt, m_InputH, m_InputUnstainedPixel ) != 0 )
+    {
+    // we failed
+    itkAssertOrThrowMacro( m_Input != nullptr, "The image to be normalized could not be processed; does it have white, blue, and pink pixels?" )
+    }
+  m_Input = inputImage;
+
+  if( referenceImage != nullptr && ( referenceImage != m_Reference || referenceImage->GetTimeStamp() != m_ReferenceTimeStamp ) )
     {
     // For VectorImage, check that number of colors is right in the
     // newly supplied reference image
-    RegionConstIterator referIter {referPtr, referPtr->GetRequestedRegion()};
+    RegionConstIterator refIt {referenceImage, referenceImage->GetRequestedRegion()};
     if /*constexpr*/( Self::PixelHelper< PixelType >::NumberOfDimensions < 0 )
       {
-      referIter.GoToBegin();
-      itkAssertOrThrowMacro( m_NumberOfColors == referIter.Get().Size(),
+      refIt.GoToBegin();
+      itkAssertOrThrowMacro( m_NumberOfColors == refIt.Get().Size(),
         "The reference image needs its number of colors to be exactly the same as the input image to be normalized" );
       }
-    m_referUnstainedPixel = CalcRowVectorType {1, m_NumberOfColors};
-    if( this->ImageToNMF( referIter, m_referH, m_referUnstainedPixel ) == 0 )
-      {
-      m_referPtr = referPtr;
-      m_referTimeStamp = referPtr->GetTimeStamp();
-      }
-    else
+    m_ReferenceUnstainedPixel = CalcRowVectorType {1, m_NumberOfColors};
+    if( this->ImageToNMF( refIt, m_ReferenceH, m_ReferenceUnstainedPixel ) != 0 )
       {
       // we failed
-      m_referPtr = nullptr;
-      itkAssertOrThrowMacro( m_referPtr != nullptr, "The reference image could not be processed; does it have white, blue, and pink pixels?" )
+      m_Reference = nullptr;
+      itkAssertOrThrowMacro( m_Reference != nullptr, "The reference image could not be processed; does it have white, blue, and pink pixels?" )
       }
     }
+  m_Reference = referenceImage;
+  m_ReferenceTimeStamp = referenceImage->GetTimeStamp();
 
-  if( ( m_inputH * m_referH.transpose() ).determinant() < CalcElementType( 0 ) )
+  if( ( m_InputH * m_ReferenceH.transpose() ).determinant() < CalcElementType( 0 ) )
     {
     // Somehow the hematoxylin and eosin rows got swapped in one of
-    // the input image or reference image.  Flip them in referH to get
+    // the input image or reference image.  Flip them in referenceH to get
     // them in synch.
     static_assert( NumberOfStains == 2, "There must be exactly two stains" );
-    const CalcMatrixType referHOriginal {m_referH};
-    m_referH.row( 0 ) = referHOriginal.row( 1 );
-    m_referH.row( 1 ) = referHOriginal.row( 0 );
+    const CalcMatrixType referenceHOriginal {m_ReferenceH};
+    m_ReferenceH.row( 0 ) = referenceHOriginal.row( 1 );
+    m_ReferenceH.row( 1 ) = referenceHOriginal.row( 0 );
     }
 
-  itkAssertOrThrowMacro( ( m_inputH * m_referH.transpose() ).determinant() > CalcElementType( 0 ), "Hematoxylin and Eosin are getting mixed up; failed" );
+  itkAssertOrThrowMacro( ( m_InputH * m_ReferenceH.transpose() ).determinant() > CalcElementType( 0 ), "Hematoxylin and Eosin are getting mixed up; failed" );
 }
 
 
@@ -211,20 +199,18 @@ void
 StructurePreservingColorNormalizationFilter< TImage >
 ::DynamicThreadedGenerateData( const RegionType & outputRegion )
 {
-  ImageType * const outputPtr = this->GetOutput();
-  itkAssertOrThrowMacro( outputPtr != nullptr, "An output image needs to be supplied" )
-  RegionIterator outputIter {outputPtr, outputRegion};
+  ImageType * const outputImage = this->GetOutput();
+  itkAssertOrThrowMacro( outputImage != nullptr, "An output image needs to be supplied" )
+  RegionIterator outIt {outputImage, outputRegion};
 
-  this->NMFsToImage( m_inputH, m_inputUnstainedPixel, m_referH, m_referUnstainedPixel, outputIter );
-  // Should we somehow make sure that the output image inherits the
-  // position, spacing, orientation, etc. from m_inputPtr?!!!
+  this->NMFsToImage( m_InputH, m_InputUnstainedPixel, m_ReferenceH, m_ReferenceUnstainedPixel, outIt );
 }
 
 
 template< typename TImage >
 int
 StructurePreservingColorNormalizationFilter< TImage >
-::ImageToNMF( RegionConstIterator &inIter, CalcMatrixType &matrixH, CalcRowVectorType &unstainedPixel ) const
+::ImageToNMF( RegionConstIterator &iter, CalcMatrixType &matrixH, CalcRowVectorType &unstainedPixel ) const
 {
   // To maintain locality of memory references, we are using
   // numberOfPixels as the number of rows rather than as the number of
@@ -235,7 +221,7 @@ StructurePreservingColorNormalizationFilter< TImage >
   // compact matrix, whereas in Vahadane W is a fairly compact matrix
   // and H is a very wide matrix.
 
-  const SizeType size = inIter.GetRegion().GetSize();
+  const SizeType size = iter.GetRegion().GetSize();
   const SizeValueType numberOfPixels = std::accumulate( size.begin(), size.end(), 1, std::multiplies< SizeValueType >() );
 
   // Find distinguishers.  These are essentially the rows of matrixH.
@@ -243,7 +229,7 @@ StructurePreservingColorNormalizationFilter< TImage >
   CalcMatrixType matrixBrightV;
   CalcMatrixType matrixDarkV;
 
-  this->ImageToMatrix( inIter, numberOfPixels, matrixBrightV, matrixDarkV );
+  this->ImageToMatrix( iter, numberOfPixels, matrixBrightV, matrixDarkV );
   this->MatrixToDistinguishers( matrixBrightV, distinguishers );
 
   // Use the distinguishers as seeds to the non-negative matrix
@@ -254,10 +240,10 @@ StructurePreservingColorNormalizationFilter< TImage >
     }
 
   // Improve matrixH using Virtanen's algorithm
-  // { std::ostringstream mesg; mesg << "matrixH before VirtanenEuclidean = " << std::endl << matrixH << std::endl; std::cout << mesg.str() << std::flush; }
+  // { std::ostringstream mesg; mesg << "matrixH before VirtanenNMFEuclidean = " << std::endl << matrixH << std::endl; std::cout << mesg.str() << std::flush; }
     {
     CalcMatrixType matrixW;     // Could end up large.
-    this->VirtanenEuclidean( matrixBrightV, matrixW, matrixH );
+    this->VirtanenNMFEuclidean( matrixBrightV, matrixW, matrixH );
     }
 
   // Rescale each row of matrixH so that the
@@ -274,10 +260,10 @@ StructurePreservingColorNormalizationFilter< TImage >
 template< typename TImage >
 void
 StructurePreservingColorNormalizationFilter< TImage >
-::ImageToMatrix( RegionConstIterator &inIter, SizeValueType numberOfPixels, CalcMatrixType &matrixBrightV, CalcMatrixType &matrixDarkV ) const
+::ImageToMatrix( RegionConstIterator &iter, SizeValueType numberOfPixels, CalcMatrixType &matrixBrightV, CalcMatrixType &matrixDarkV ) const
 {
   // If the image is big, take a random subset of its pixels and put them into matrixV.
-  using UniformGeneratorType = itk::Statistics::MersenneTwisterRandomVariateGenerator;
+  using UniformGeneratorType = Statistics::MersenneTwisterRandomVariateGenerator;
   UniformGeneratorType::Pointer uniformGenerator = UniformGeneratorType::New();
   uniformGenerator->Initialize( 20200609 );
 
@@ -285,12 +271,12 @@ StructurePreservingColorNormalizationFilter< TImage >
 
   // To avoid zeros, every color intensity is incremented.
   CalcMatrixType matrixV {numberOfRows, m_NumberOfColors};
-  for( inIter.GoToBegin(); !inIter.IsAtEnd(); ++inIter )
+  for( iter.GoToBegin(); !iter.IsAtEnd(); ++iter )
     {
     if ( uniformGenerator->GetVariate() * numberOfPixels-- < numberOfRows )
       {
       --numberOfRows;
-      PixelType pixelValue = inIter.Get();
+      PixelType pixelValue = iter.Get();
       for( Eigen::Index color = 0; color < m_NumberOfColors; ++color )
         {
         matrixV( numberOfRows, color ) = pixelValue[color] + CalcElementType( 1.0 );
@@ -572,11 +558,11 @@ StructurePreservingColorNormalizationFilter< TImage >
   // suppressed by eosin is indicated by
   // m_ColorIndexSuppressedByEosin.
   const CalcColVectorType redValues {distinguishers.col( m_ColorIndexSuppressedByHematoxylin )};
-  const CalcElementType * const hematoxylinputIterator {std::min_element( Self::cbegin( redValues ), Self::cend( redValues ) )};
-  hematoxylinIndex = std::distance( Self::cbegin( redValues ), hematoxylinputIterator );
+  const CalcElementType * const hematoxylinIt {std::min_element( Self::cbegin( redValues ), Self::cend( redValues ) )};
+  hematoxylinIndex = std::distance( Self::cbegin( redValues ), hematoxylinIt );
   const CalcColVectorType greenValues {distinguishers.col( m_ColorIndexSuppressedByEosin )};
-  const CalcElementType * const eosinputIterator {std::min_element( Self::cbegin( greenValues ), Self::cend( greenValues ) )};
-  eosinIndex = std::distance( Self::cbegin( greenValues ), eosinputIterator );
+  const CalcElementType * const eosinIt {std::min_element( Self::cbegin( greenValues ), Self::cend( greenValues ) )};
+  eosinIndex = std::distance( Self::cbegin( greenValues ), eosinIt );
 }
 
 
@@ -615,7 +601,7 @@ StructurePreservingColorNormalizationFilter< TImage >
 template< typename TImage >
 void
 StructurePreservingColorNormalizationFilter< TImage >
-::VirtanenEuclidean( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH )
+::VirtanenNMFEuclidean( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH )
 {
   const auto clip = [] ( const CalcElementType &x )
     {
@@ -651,7 +637,7 @@ StructurePreservingColorNormalizationFilter< TImage >
       previousMatrixW = matrixW;
       }
     }
-  // { std::ostringstream mesg; mesg << "Executed = " << loopIter << " iterations of VirtanenEuclidean" << std::endl; std::cout << mesg.str() << std::flush; }
+  // { std::ostringstream mesg; mesg << "Executed = " << loopIter << " iterations of VirtanenNMFEuclidean" << std::endl; std::cout << mesg.str() << std::flush; }
 
   // Round off values in the response, so that numbers are quite small
   // are set to zero.
@@ -664,7 +650,7 @@ StructurePreservingColorNormalizationFilter< TImage >
 template< typename TImage >
 void
 StructurePreservingColorNormalizationFilter< TImage >
-::VirtanenKLDivergence( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH )
+::VirtanenNMFKLDivergence( const CalcMatrixType &matrixV, CalcMatrixType &matrixW, CalcMatrixType &matrixH )
 {
   // If this method is going to get used, we may need to incorporate
   // the Lasso penalty lambda for matrixW and incorporate the Lagrange
@@ -702,7 +688,7 @@ StructurePreservingColorNormalizationFilter< TImage >
       previousMatrixW = matrixW;
       }
     }
-  // { std::ostringstream mesg; mesg << "Executed = " << loopIter << " iterations of VirtanenKLDivergence" << std::endl; std::cout << mesg.str() << std::flush; }
+  // { std::ostringstream mesg; mesg << "Executed = " << loopIter << " iterations of VirtanenNMFKLDivergence" << std::endl; std::cout << mesg.str() << std::flush; }
 
   // Round off values in the response, so that numbers are quite small
   // are set to zero.
@@ -714,24 +700,25 @@ StructurePreservingColorNormalizationFilter< TImage >
 template< typename TImage >
 void
 StructurePreservingColorNormalizationFilter< TImage >
-::NMFsToImage( const CalcMatrixType &inputH, const CalcRowVectorType &inputUnstained, const CalcMatrixType &referH, const CalcRowVectorType &referUnstained, RegionIterator &outputIter ) const
+::NMFsToImage( const CalcMatrixType &inputH, const CalcRowVectorType &inputUnstained, const CalcMatrixType &referenceH, const CalcRowVectorType &referenceUnstained,
+  RegionIterator &outIt ) const
 {
   // Read in corresponding part of the input region.
-  const SizeType size = outputIter.GetRegion().GetSize();
+  const SizeType size = outIt.GetRegion().GetSize();
   const SizeValueType numberOfPixels = std::accumulate( size.begin(), size.end(), 1, std::multiplies< SizeValueType >() );
   CalcMatrixType matrixV {numberOfPixels, m_NumberOfColors};
-  RegionConstIterator inputIter {m_inputPtr, m_inputPtr->GetRequestedRegion()};
-  outputIter.GoToBegin();
-  inputIter.GoToBegin();
-  for( SizeValueType pixelIndex {0}; !outputIter.IsAtEnd(); ++outputIter, ++inputIter, ++pixelIndex )
+  RegionConstIterator inIt {m_Input, m_Input->GetRequestedRegion()};
+  outIt.GoToBegin();
+  inIt.GoToBegin();
+  for( SizeValueType pixelIndex {0}; !outIt.IsAtEnd(); ++outIt, ++inIt, ++pixelIndex )
     {
     // Find input index that matches this output index.
-    while ( inputIter.GetIndex() != outputIter.GetIndex() )
+    while ( inIt.GetIndex() != outIt.GetIndex() )
       {
-      ++inputIter;
+      ++inIt;
       }
     // Copy the input pixel into our working matrix.
-    PixelType pixelValue = inputIter.Get();
+    PixelType pixelValue = inIt.Get();
     for( Eigen::Index color = 0; color < m_NumberOfColors; ++color )
       {
       matrixV( pixelIndex, color ) = static_cast< CalcElementType >( pixelValue[color] );
@@ -741,43 +728,43 @@ StructurePreservingColorNormalizationFilter< TImage >
   // Convert matrixV using the inputUnstained pixel and a call to
   // logarithm.
   CalcRowVectorType logInputUnstained = inputUnstained.unaryExpr( CalcUnaryFunctionPointer( std::log ) );
-  CalcRowVectorType logReferUnstained = referUnstained.unaryExpr( CalcUnaryFunctionPointer( std::log ) );
+  CalcRowVectorType logReferenceUnstained = referenceUnstained.unaryExpr( CalcUnaryFunctionPointer( std::log ) );
   const CalcColVectorType firstOnes {CalcColVectorType::Constant( numberOfPixels, 1, 1.0 )};
   matrixV = ( firstOnes * logInputUnstained ) - matrixV.unaryExpr( CalcUnaryFunctionPointer( std::log ) );
 
-  // Switch from inputH to referH.
+  // Switch from inputH to referenceH.
     {
     const auto clip = [] ( const CalcElementType &x )
       {
       return std::max( CalcElementType( 0.0 ), x );
       };
     CalcMatrixType matrixW = ( ( ( matrixV * inputH.transpose() ).array() - lambda ).unaryExpr( clip ).matrix() * ( inputH * inputH.transpose() ).inverse() ).unaryExpr( clip );
-    matrixV = matrixW * referH;
+    matrixV = matrixW * referenceH;
     }
 
-  // Convert matrixV using exponentiation and the referUnstained pixel.
-  matrixV = ( ( firstOnes * logReferUnstained ) - matrixV ).unaryExpr( CalcUnaryFunctionPointer( std::exp ) );
+  // Convert matrixV using exponentiation and the referenceUnstained pixel.
+  matrixV = ( ( firstOnes * logReferenceUnstained ) - matrixV ).unaryExpr( CalcUnaryFunctionPointer( std::exp ) );
   PixelType pixelValue = Self::PixelHelper< PixelType >::pixelInstance( m_NumberOfDimensions );
-  outputIter.GoToBegin();
-  inputIter.GoToBegin();
+  outIt.GoToBegin();
+  inIt.GoToBegin();
   constexpr CalcElementType upperbound = std::numeric_limits< PixelValueType >::max();
   constexpr CalcElementType lowerbound = std::numeric_limits< PixelValueType >::min();
-  for( SizeValueType pixelIndex {0}; !outputIter.IsAtEnd(); ++outputIter, ++pixelIndex )
+  for( SizeValueType pixelIndex {0}; !outIt.IsAtEnd(); ++outIt, ++pixelIndex )
     {
-    while ( inputIter.GetIndex() != outputIter.GetIndex() )
+    while ( inIt.GetIndex() != outIt.GetIndex() )
       {
-      ++inputIter;
+      ++inIt;
       }
     for( Eigen::Index color = 0; color < m_NumberOfColors; ++color )
       {
       pixelValue[color] = std::max( std::min( matrixV( pixelIndex, color ) - CalcElementType( 1.0 ), upperbound ), lowerbound );
       }
-    const PixelType inputPixel = inputIter.Get();
+    const PixelType inputPixel = inIt.Get();
     for( Eigen::Index dim = m_NumberOfColors; dim < m_NumberOfDimensions; ++dim )
       {
       pixelValue[dim] = inputPixel[dim];
       }
-    outputIter.Set( pixelValue );
+    outIt.Set( pixelValue );
     }
 }
 
@@ -903,11 +890,6 @@ template< typename TImage >
 constexpr typename StructurePreservingColorNormalizationFilter< TImage >::CalcElementType
 StructurePreservingColorNormalizationFilter< TImage >
 ::epsilon0;
-
-template< typename TImage >
-constexpr typename StructurePreservingColorNormalizationFilter< TImage >::CalcElementType
-StructurePreservingColorNormalizationFilter< TImage >
-::epsilon1;
 
 template< typename TImage >
 constexpr typename StructurePreservingColorNormalizationFilter< TImage >::CalcElementType
