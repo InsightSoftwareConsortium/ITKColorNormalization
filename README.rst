@@ -38,14 +38,8 @@ The lead developer of InsightSoftwareConsortium/ITKColorNormalization is `Lee Ne
 Installation for python
 -----------------------
 
-From the web page https://github.com/InsightSoftwareConsortium/ITKColorNormalization/actions, click on a recently
-successfully built workflow.  This takes you to a page of \"Build, test, package\" and a list of Artifacts, such as
-WindowWheel3.8, WindowWheel3.7, WindowWheel3.6, WindowWheel3.5, MacOSWheels, LinuxWheel38, LinuxWheel37, LinuxWheel36, and
-LinuxWheel35.  Click on the artifact that matches your operating system and version of python, to download a zip file.  Find
-the downloaded zip file, perhaps within your Downloads folder, and unzip it.  This gives you a file with a name like
-itk_spcn-0.1.0-cp38-cp38-manylinux1_x86_64.whl.
-
-In a terminal session, create a python virtual environment with a command like
+To install the package into a python virtual environment, first create a python virtual environment in a terminal
+session with a command like
 
 .. code-block:: shell
 
@@ -58,13 +52,13 @@ with a single \".\" followed by a space.
 
     . /tmp/venv/bin/activate
 
-Install the wheel in the virtual environment with a command like
+Whether or not you are using a virtual environment, install the package with a command like
 
 .. code-block:: shell
 
-    /tmp/venv/bin/pip install itk_spcn-0.1.0-cp38-cp38-manylinux1_x86_64.whl
+    pip install itk-spcn
 
-You can stop using the virtual environment in your terminal session with the following command.
+You can suspend using the virtual environment in your terminal session with the following command.
 
 .. code-block:: shell
 
@@ -73,15 +67,15 @@ You can stop using the virtual environment in your terminal session with the fol
 Usage
 -----
 
-If you have not done so already, make your current terminal session use the previously created virtual environment with a
-command like the following.  Note that the line begins with a single \".\" followed by a space.
+If you are using a virtual python environment and you have not done so already, make your current terminal session use the
+previously created virtual environment with a command like the following.  Note that the line begins with a single \".\"
+followed by a space.
 
 .. code-block:: shell
 
     . /tmp/venv/bin/activate
 
-Launch python using your virtual environment with \`python\` or \`python3\`.  In python, type the following to load the itk
-package and two images:
+Launch python.  In python, type the following to load the itk package and two images:
 
 .. code-block:: python
 
