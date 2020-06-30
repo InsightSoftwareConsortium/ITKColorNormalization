@@ -1,10 +1,10 @@
-# New Insight Toolkit (ITK) module for Structure Preserving Color Normalization
+# Insight Toolkit (ITK) module for Structure Preserving Color Normalization
 
 ## Introduction
 
-We have added a new module to the [Insight Toolkit (ITK)](https://itk.org/) to perform Structure Preserving Color
-Normalization on an [H & E](https://en.wikipedia.org/wiki/H%26E_stain) image using a reference image.  The software is
-available in C++ and is also packaged for [Python](https://www.python.org/).
+This [Insight Toolkit (ITK)](https://itk.org/) module performs Structure Preserving Color Normalization on an [H &
+E](https://en.wikipedia.org/wiki/H%26E_stain) image using a reference image.  The module is in C++ and is also packaged
+for [Python](https://www.python.org/).
 
 H & E ([hematoxylin](https://en.wikipedia.org/wiki/Haematoxylin) and [eosin](https://en.wikipedia.org/wiki/Eosin)) are
 stains used to color parts of cells in a histological image, often for medical diagnosis.  Hematoxylin is a compound
@@ -100,7 +100,7 @@ RGBA.
     output_writer.SetFileName(output_image_filename)
     output_writer.Write()
 
-Note that if `spcn_filter` is used again with a different image, for example from a different reader,
+Note that if `spcn_filter` is used again with a different `input_image`, for example from a different reader,
 
     spcn_filter.SetInput(0, input_reader2.GetOutput())
 
