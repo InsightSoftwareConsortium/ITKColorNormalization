@@ -1,6 +1,12 @@
-# Insight Toolkit (ITK) module for Structure Preserving Color Normalization
+# ITKColorNormalization
 
-## Introduction
+![Build, test, package status](https://github.com/InsightSoftwareConsortium/ITKColorNormalization/workflows/Build,%20test,%20package/badge.svg)
+
+[ ![PyPI Version](https://img.shields.io/pypi/v/itk-spcn.svg) ](https://pypi.python.org/pypi/itk-spcn)
+
+![Apache 2.0 License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
+
+## Overview
 
 This [Insight Toolkit (ITK)](https://itk.org/) module performs Structure Preserving Color Normalization on an [H &
 E](https://en.wikipedia.org/wiki/H%26E_stain) image using a reference image.  The module is in C++ and is also packaged
