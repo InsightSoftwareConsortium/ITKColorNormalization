@@ -67,7 +67,7 @@ You can use the functional, eager interface to ITK to choose when each step will
 color scheme of the `reference_image`.  The `color_index_suppressed_by_hematoxylin` and
 `color_index_suppressed_by_eosin` arguments are optional if the `input_image` pixel type is RGB or RGBA.  Here you are
 indicating that the color channel most suppressed by hematoxylin is 0 (which is red for RGB and RGBA pixels) and that
-the color most suppressed by eosin is 1 (which is green for RGB and RGBA pixels); these are the defaults for RGB and
+the color most suppressed by eosin is 1 (which is green for RGB and RGBA pixels)\; these are the defaults for RGB and
 RGBA pixels.
 
     input_image = itk.imread(input_image_filename)
@@ -83,7 +83,7 @@ RGBA pixels.
 
 Alternatively, you can use the ITK pipeline infrastructure that waits until a call to `Update()` or `Write()` before
 executing the pipeline.  The function `itk.StructurePreservingColorNormalizationFilter.New()` uses its argument to
-determine the pixel type for the filter; the actual image is not used there but is supplied with the
+determine the pixel type for the filter\; the actual image is not used there but is supplied with the
 `spcn_filter.SetInput(0, input_reader.GetOutput())` call.  As above, the calls to
 `SetColorIndexSuppressedByHematoxylin` and `SetColorIndexSuppressedByEosin` are optional if the pixel type is RGB or
 RGBA.
