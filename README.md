@@ -44,13 +44,17 @@ and Windows and several versions of Python, 3.5, 3.6, 3.7, and 3.8.  If you do n
 current Python environment, you should first create and activate a [Python virtual environment
 (venv)](https://docs.python.org/3/tutorial/venv.html) to work in.  Then, run the following from the command-line:
 
-    pip install itk-spcn
+```shell-script
+pip install itk-spcn
+```
 
 Launch `python`, import the itk package, and set variable names for the input images
 
-    import itk
-    input_image_filename = 'path/to/image_to_be_normalized'
-    reference_image_filename = 'path/to/image_to_be_used_as_color_reference'
+```python
+import itk
+input_image_filename = 'path/to/image_to_be_normalized'
+reference_image_filename = 'path/to/image_to_be_used_as_color_reference'
+```
 
 ## Usage in Python
 
@@ -76,14 +80,18 @@ indicating that the color channel most suppressed by hematoxylin is 0 (which is 
 the color most suppressed by eosin is 1 (which is green for RGB and RGBA pixels)\; these are the defaults for RGB and
 RGBA pixels.
 
-    input_image = itk.imread(input_image_filename)
-    reference_image = itk.imread(reference_image_filename)
-    eager_normalized_image = itk.structure_preserving_color_normalization_filter(
-        input_image,
-        reference_image,
-        color_index_suppressed_by_hematoxylin=0,
-        color_index_suppressed_by_eosin=1)
-    itk.imwrite(eager_normalized_image, output_image_filename)
+```python
+input_image = itk.imread(input_image_filename)
+reference_image = itk.imread(reference_image_filename)
+
+eager_normalized_image = itk.structure_preserving_color_normalization_filter(
+    input_image,
+    reference_image,
+    color_index_suppressed_by_hematoxylin=0,
+    color_index_suppressed_by_eosin=1)
+
+itk.imwrite(eager_normalized_image, output_image_filename)
+```
 
 ### ITK pipeline interface
 
@@ -94,21 +102,27 @@ determine the pixel type for the filter\; the actual image is not used there but
 `SetColorIndexSuppressedByHematoxylin` and `SetColorIndexSuppressedByEosin` are optional if the pixel type is RGB or
 RGBA.
 
-    input_reader = itk.ImageFileReader.New(FileName=input_image_filename)
-    reference_reader = itk.ImageFileReader.New(FileName=reference_image_filename)
-    spcn_filter = itk.StructurePreservingColorNormalizationFilter.New(Input=input_reader.GetOutput())
-    spcn_filter.SetColorIndexSuppressedByHematoxylin(0)
-    spcn_filter.SetColorIndexSuppressedByEosin(1)
-    spcn_filter.SetInput(0, input_reader.GetOutput())
-    spcn_filter.SetInput(1, reference_reader.GetOutput())
-    output_writer = itk.ImageFileWriter.New(spcn_filter.GetOutput())
-    output_writer.SetInput(spcn_filter.GetOutput())
-    output_writer.SetFileName(output_image_filename)
-    output_writer.Write()
+```python
+input_reader = itk.ImageFileReader.New(FileName=input_image_filename)
+reference_reader = itk.ImageFileReader.New(FileName=reference_image_filename)
+
+spcn_filter = itk.StructurePreservingColorNormalizationFilter.New(Input=input_reader.GetOutput())
+spcn_filter.SetColorIndexSuppressedByHematoxylin(0)
+spcn_filter.SetColorIndexSuppressedByEosin(1)
+spcn_filter.SetInput(0, input_reader.GetOutput())
+spcn_filter.SetInput(1, reference_reader.GetOutput())
+
+output_writer = itk.ImageFileWriter.New(spcn_filter.GetOutput())
+output_writer.SetInput(spcn_filter.GetOutput())
+output_writer.SetFileName(output_image_filename)
+output_writer.Write()
+```
 
 Note that if `spcn_filter` is used again with a different `input_image`, for example from a different reader,
 
-    spcn_filter.SetInput(0, input_reader2.GetOutput())
+```python
+spcn_filter.SetInput(0, input_reader2.GetOutput())
+```
 
 but the `reference_image` is unchanged then the filter will use its cached analysis of the `reference_image`, which
 saves about half the processing time.
