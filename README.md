@@ -6,6 +6,8 @@
 
 ![Apache 2.0 License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/InsightSoftwareConsortium/ITKColorNormalization/master?filepath=examples%2FITKColorNormalization.ipynb)
+
 ## Overview
 
 This [Insight Toolkit (ITK)](https://itk.org/) module performs Structure Preserving Color Normalization on an [H &
