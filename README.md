@@ -17,7 +17,8 @@ stains used to color parts of cells in a histological image, often for medical d
 that stains cell nuclei a purple-blue color.  Eosin is a compound that stains extracellular matrix and cytoplasm pink.
 However, the exact color of purple-blue or pink can vary from image to image, and this can make comparison of images
 difficult.  This routine addresses the issue by re-coloring one image (the first image supplied to the routine) using
-the color scheme of a reference image (the second image supplied to the routine).
+the color scheme of a reference image (the second image supplied to the routine).  The technique requires that the
+images have at least 3 colors, such as red, green, and blue (RGB).
 
 Structure Preserving Color Normalization is a technique described in [Vahadane et al.,
 2016](https://doi.org/10.1109/TMI.2016.2529665) and modified in [Ramakrishnan et al.,
