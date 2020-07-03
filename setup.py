@@ -13,7 +13,7 @@ except ImportError:
 
 setup(
     name='itk-spcn',
-    version='0.1.0',
+    version='0.1.1',
     author='Lee Newberg',
     author_email='lee.newberg@kitware.com',
     packages=['itk'],
@@ -44,6 +44,6 @@ setup(
     keywords='ITK InsightToolkit',
     url=r'https://itk.org/',
     install_requires=[
-        r'itk>=5.0.0.post1'
+        r'itk>=5.1.0.post3'
     ]
     )
