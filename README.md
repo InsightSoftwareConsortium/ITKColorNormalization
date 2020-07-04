@@ -1,11 +1,9 @@
 # ITKColorNormalization
 
 ![Build, test, package status](https://github.com/InsightSoftwareConsortium/ITKColorNormalization/workflows/Build,%20test,%20package/badge.svg)
-
-[ ![PyPI Version](https://img.shields.io/pypi/v/itk-spcn.svg) ](https://pypi.python.org/pypi/itk-spcn)
-
+[![PyPI Version](https://img.shields.io/pypi/v/itk-spcn.svg)](https://pypi.python.org/pypi/itk-spcn)
 ![Apache 2.0 License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
-
+[![DOI](https://zenodo.org/badge/263648073.svg)](https://zenodo.org/badge/latestdoi/263648073)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/InsightSoftwareConsortium/ITKColorNormalization/master?filepath=examples%2FITKColorNormalization.ipynb)
 
 ## Overview
