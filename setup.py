@@ -21,7 +21,6 @@ setup(
     author_email='lee.newberg@kitware.com',
     packages=['itk'],
     package_dir={'itk': 'itk'},
-    download_url=r'https://github.com/InsightSoftwareConsortium/ITKStructurePreservingColorNormalization',
     description=r'This performs structure preserving color normalization on an image using a reference image.',
     long_description=readme,
     long_description_content_type='text/markdown',
@@ -46,7 +45,7 @@ setup(
         ],
     license='Apache',
     keywords='ITK InsightToolkit',
-    url=r'https://itk.org/',
+    url=r'https://github.com/InsightSoftwareConsortium/ITKColorNormalization/',
     install_requires=[
         r'itk>=5.1.0.post3'
     ]
