@@ -2,6 +2,9 @@
 from __future__ import print_function
 from os import sys
 
+with open('README.md', 'r') as fp:
+    readme = fp.read()
+
 try:
     from skbuild import setup
 except ImportError:
@@ -13,14 +16,15 @@ except ImportError:
 
 setup(
     name='itk-spcn',
-    version='0.1.1',
+    version='0.1.2',
     author='Lee Newberg',
     author_email='lee.newberg@kitware.com',
     packages=['itk'],
     package_dir={'itk': 'itk'},
     download_url=r'https://github.com/InsightSoftwareConsortium/ITKStructurePreservingColorNormalization',
     description=r'This performs structure preserving color normalization on an image using a reference image.',
-    long_description='By perfoming a non-negative matrix factorization on an input image and a reference image, the colors in use in the reference image are transfered to the input image.',
+    long_description=readme,
+    long_description_content_type='text/markdown',
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
