@@ -1,2 +1,2 @@
 itk-spcn
-itkwidgets
+itkwidgets==0.30.1
