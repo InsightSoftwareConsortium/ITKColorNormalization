@@ -293,17 +293,21 @@ protected:
   // alternates.
 #define STRUCTUREPRESERVINGCOLORNORMALIZATIONFILTER_STRICT_EIGEN3_ITERATORS 0
 #if STRUCTUREPRESERVINGCOLORNORMALIZATIONFILTER_STRICT_EIGEN3_ITERATORS
-  template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
-  static _Scalar *begin( Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix );
+  template <typename TScalar, int VRows, int VCols, int VOptions, int VMaxRows, int VMaxCols>
+  static TScalar *
+  begin(Eigen::Matrix<TScalar, VRows, VCols, VOptions, VMaxRows, VMaxCols> & matrix);
 
-  template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
-  static const _Scalar *cbegin( const Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix );
+  template <typename TScalar, int VRows, int VCols, int VOptions, int VMaxRows, int VMaxCols>
+  static const TScalar *
+  cbegin(const Eigen::Matrix<TScalar, VRows, VCols, VOptions, VMaxRows, VMaxCols> & matrix);
 
-  template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
-  static _Scalar *end( Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix );
+  template <typename TScalar, int VRows, int VCols, int VOptions, int VMaxRows, int VMaxCols>
+  static TScalar *
+  end(Eigen::Matrix<TScalar, VRows, VCols, VOptions, VMaxRows, VMaxCols> & matrix);
 
-  template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
-  static const _Scalar *cend( const Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix );
+  template <typename TScalar, int VRows, int VCols, int VOptions, int VMaxRows, int VMaxCols>
+  static const TScalar *
+  cend(const Eigen::Matrix<TScalar, VRows, VCols, VOptions, VMaxRows, VMaxCols> & matrix);
 
 #else
   template< typename TMatrix >

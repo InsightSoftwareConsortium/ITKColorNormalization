@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.10.2)
+cmake_minimum_required(VERSION 3.16.3)
 project(StructurePreservingColorNormalization)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 if(NOT ITK_SOURCE_DIR)
   find_package(ITK REQUIRED)

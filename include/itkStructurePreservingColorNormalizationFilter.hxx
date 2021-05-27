@@ -769,39 +769,39 @@ StructurePreservingColorNormalizationFilter< TImage >
 }
 
 #if STRUCTUREPRESERVINGCOLORNORMALIZATIONFILTER_STRICT_EIGEN3_ITERATORS
-template< typename TImage >
-template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
-_Scalar *
-StructurePreservingColorNormalizationFilter< TImage >
-::begin( Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix )
+template <typename TImage>
+template <typename TScalar, int VRows, int VCols, int VOptions, int VMaxRows, int VMaxCols>
+TScalar *
+StructurePreservingColorNormalizationFilter<TImage>::begin(
+  Eigen::Matrix<TScalar, VRows, VCols, VOptions, VMaxRows, VMaxCols> & matrix)
 {
   return matrix.data();
 }
 
-template< typename TImage >
-template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
-const _Scalar *
-StructurePreservingColorNormalizationFilter< TImage >
-::cbegin( const Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix )
+template <typename TImage>
+template <typename TScalar, int VRows, int VCols, int VOptions, int VMaxRows, int VMaxCols>
+const TScalar *
+StructurePreservingColorNormalizationFilter<TImage>::cbegin(
+  const Eigen::Matrix<TScalar, VRows, VCols, VOptions, VMaxRows, VMaxCols> & matrix)
 {
   return matrix.data();
 }
 
-template< typename TImage >
-template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
-_Scalar *
-StructurePreservingColorNormalizationFilter< TImage >
-::end( Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix )
+template <typename TImage>
+template <typename TScalar, int VRows, int VCols, int VOptions, int VMaxRows, int VMaxCols>
+TScalar *
+StructurePreservingColorNormalizationFilter<TImage>::end(
+  Eigen::Matrix<TScalar, VRows, VCols, VOptions, VMaxRows, VMaxCols> & matrix)
 {
   itkAssertOrThrowMacro( std::distance( matrix.data(), &matrix( matrix.rows() - 1, matrix.cols() - 1 ) ) + 1 == matrix.size(), "Bad array stepping" )
   return matrix.data() + matrix.size();
 }
 
-template< typename TImage >
-template< typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols >
-const _Scalar *
-StructurePreservingColorNormalizationFilter< TImage >
-::cend( const Eigen::Matrix< _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols > &matrix )
+template <typename TImage>
+template <typename TScalar, int VRows, int VCols, int VOptions, int VMaxRows, int VMaxCols>
+const TScalar *
+StructurePreservingColorNormalizationFilter<TImage>::cend(
+  const Eigen::Matrix<TScalar, VRows, VCols, VOptions, VMaxRows, VMaxCols> & matrix)
 {
   itkAssertOrThrowMacro( std::distance( matrix.data(), &matrix( matrix.rows() - 1, matrix.cols() - 1 ) ) + 1 == matrix.size(), "Bad array stepping" )
   return matrix.data() + matrix.size();

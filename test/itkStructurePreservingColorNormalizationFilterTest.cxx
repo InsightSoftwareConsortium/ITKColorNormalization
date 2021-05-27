@@ -109,7 +109,7 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
   // filter->SetColorIndexSuppressedByHematoxylin( 0 );
   // filter->SetColorIndexSuppressedByEosin( 1 );
 
-  EXERCISE_BASIC_OBJECT_METHODS( filter, StructurePreservingColorNormalizationFilter, ImageToImageFilter );
+  ITK_EXERCISE_BASIC_OBJECT_METHODS(filter, StructurePreservingColorNormalizationFilter, ImageToImageFilter);
 
   ShowProgress::Pointer showProgress = ShowProgress::New();
   filter->AddObserver( itk::ProgressEvent(), showProgress );
@@ -206,7 +206,7 @@ int itkStructurePreservingColorNormalizationFilterTest( int argc, char * argv[] 
   writer->SetInput( filter->GetOutput() );
   writer->SetUseCompression( true );
 
-  TRY_EXPECT_NO_EXCEPTION( writer->Update() );
+  ITK_TRY_EXPECT_NO_EXCEPTION(writer->Update());
 
 
   std::cout << "Test finished." << std::endl;
