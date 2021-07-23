@@ -16,7 +16,7 @@ except ImportError:
 
 setup(
     name="itk-spcn",
-    version="0.1.3",
+    version="0.1.4",
     author="Lee Newberg",
     author_email="lee.newberg@kitware.com",
     packages=["itk"],
