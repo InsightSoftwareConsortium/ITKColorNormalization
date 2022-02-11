@@ -34,7 +34,7 @@ StructurePreservingColorNormalizationFilter<TImage>::StructurePreservingColorNor
   , m_ColorIndexSuppressedByEosin(Self::PixelHelper<PixelType>::ColorIndexSuppressedByEosin)
 {
   // The number of colors had better be at least 3 or be unknown
-  // ( which is indicated with the value -1 ).
+  // (which is indicated with the value -1).
   static_assert(2 / PixelHelper<PixelType>::NumberOfColors < 1, "Images need at least 3 colors");
 }
 
@@ -67,8 +67,8 @@ StructurePreservingColorNormalizationFilter<TImage>::GenerateInputRequestedRegio
   // Call the superclass' implementation of this method
   Superclass::GenerateInputRequestedRegion();
 
-  // Get pointers to the input image ( to be normalized ) and
-  // reference image.
+  // Get pointers to the input image (to be normalized) and reference
+  // image.
   ImageType * inputImage = const_cast<ImageType *>(this->GetInput(0));
   ImageType * referenceImage = const_cast<ImageType *>(this->GetInput(1));
 
@@ -143,7 +143,7 @@ StructurePreservingColorNormalizationFilter<TImage>::BeforeThreadedGenerateData(
       RegionConstIterator refIt{ m_Reference, m_Reference->GetRequestedRegion() };
       refIt.GoToBegin();
       itkAssertOrThrowMacro(m_NumberOfColors == refIt.Get().Size(),
-                            "The ( cached ) reference image needs its number of colors to be exactly the same as the "
+                            "The (cached) reference image needs its number of colors to be exactly the same as the "
                             "input image to be normalized");
     }
   }
@@ -155,7 +155,7 @@ StructurePreservingColorNormalizationFilter<TImage>::BeforeThreadedGenerateData(
     // we failed
     itkAssertOrThrowMacro(
       m_Input != nullptr,
-      "The image to be normalized could not be processed; does it have white, blue, and pink pixels?")
+      "The image to be normalized could not be processed; does it have white, blue, and pink pixels?");
   }
   m_Input = inputImage;
 
@@ -178,7 +178,7 @@ StructurePreservingColorNormalizationFilter<TImage>::BeforeThreadedGenerateData(
       // we failed
       m_Reference = nullptr;
       itkAssertOrThrowMacro(m_Reference != nullptr,
-                            "The reference image could not be processed; does it have white, blue, and pink pixels?")
+                            "The reference image could not be processed; does it have white, blue, and pink pixels?");
     }
   }
   m_Reference = referenceImage;
@@ -194,7 +194,6 @@ StructurePreservingColorNormalizationFilter<TImage>::BeforeThreadedGenerateData(
     m_ReferenceH.row(0) = referenceHOriginal.row(1);
     m_ReferenceH.row(1) = referenceHOriginal.row(0);
   }
-
   itkAssertOrThrowMacro((m_InputH * m_ReferenceH.transpose()).determinant() > CalcElementType(0),
                         "Hematoxylin and Eosin are getting mixed up; failed");
 }
@@ -205,8 +204,8 @@ void
 StructurePreservingColorNormalizationFilter<TImage>::DynamicThreadedGenerateData(const RegionType & outputRegion)
 {
   ImageType * const outputImage = this->GetOutput();
-  itkAssertOrThrowMacro(outputImage != nullptr, "An output image needs to be supplied")
-    RegionIterator outIt{ outputImage, outputRegion };
+  itkAssertOrThrowMacro(outputImage != nullptr, "An output image needs to be supplied");
+  RegionIterator outIt{ outputImage, outputRegion };
 
   this->NMFsToImage(m_InputH, m_InputUnstainedPixel, m_ReferenceH, m_ReferenceUnstainedPixel, outIt);
 }
@@ -254,7 +253,7 @@ StructurePreservingColorNormalizationFilter<TImage>::ImageToNMF(RegionConstItera
   }
 
   // Rescale each row of matrixH so that the
-  // ( 100-VeryDarkPercentileLevel ) value of each column of matrixW is
+  // (100-VeryDarkPercentileLevel) value of each column of matrixW is
   // 1.0.
   // { std::ostringstream mesg; mesg << "matrixH before NormalizeMatrixH = " << std::endl << matrixH << std::endl;
   // std::cout << mesg.str() << std::flush; }
@@ -370,8 +369,8 @@ StructurePreservingColorNormalizationFilter<TImage>::MatrixToDistinguishers(cons
 {
   const CalcMatrixType normVStart{ matrixV };
 
-  // We will store the row ( pixel ) index of each distinguishing
-  // pixel in firstPassDistinguisherIndices.
+  // We will store the row (pixel) index of each distinguishing pixel
+  // in firstPassDistinguisherIndices.
   std::array<int, NumberOfStains + 1> firstPassDistinguisherIndices{ -1 };
   SizeValueType                       numberOfDistinguishers{ 0 };
   Self::FirstPassDistinguishers(normVStart, firstPassDistinguisherIndices, numberOfDistinguishers);
@@ -399,7 +398,7 @@ StructurePreservingColorNormalizationFilter<TImage>::FirstPassDistinguishers(
   bool needToRecenterMatrix = true;
   while (numberOfDistinguishers <= NumberOfStains)
   {
-    // Find the next distinguishing row ( pixel )
+    // Find the next distinguishing row (pixel)
     firstPassDistinguisherIndices[numberOfDistinguishers] = Self::MatrixToOneDistinguisher(normV);
     // If we found a distinguisher and we have not yet found
     // NumberOfStains+1 of them, then look for the next distinguisher.
@@ -462,8 +461,8 @@ StructurePreservingColorNormalizationFilter<TImage>::SecondPassDistinguishers(
     // We have sent all distinguishers except self to the origin.
     // Whatever is far from the origin in the same direction as self
     // is a good replacement for self.  We will take an average among
-    // those that are at least 80% as far as the best.  ( Note that
-    // self could still be best, but not always. )
+    // those that are at least 80% as far as the best.  (Note that
+    // self could still be best, but not always.)
     const CalcColVectorType dotProducts{ normV * normV.row(firstPassDistinguisherIndices[distinguisher]).transpose() };
     const CalcElementType   threshold{ *std::max_element(Self::cbegin(dotProducts), Self::cend(dotProducts)) *
                                      SecondPassDistinguishersThreshold };
@@ -571,9 +570,9 @@ StructurePreservingColorNormalizationFilter<TImage>::DistinguishersToColors(Calc
                                                                             SizeValueType &        hematoxylinIndex,
                                                                             SizeValueType &        eosinIndex) const
 {
-  // Figure out which, distinguishers are unstained ( highest
-  // brightness ), hematoxylin ( suppresses red ), and eosin (
-  // suppresses green ).
+  // Figure out which, distinguishers are unstained (highest
+  // brightness), hematoxylin (suppresses red), and eosin (suppresses
+  // green).
   const CalcColVectorType       lengths2{ distinguishers.rowwise().squaredNorm() };
   const CalcElementType * const unstainedIterator{ std::max_element(Self::cbegin(lengths2), Self::cend(lengths2)) };
   unstainedIndex = std::distance(Self::cbegin(lengths2), unstainedIterator);
@@ -601,8 +600,8 @@ StructurePreservingColorNormalizationFilter<TImage>::NormalizeMatrixH(const Calc
   const CalcColVectorType firstOnes{ CalcColVectorType::Constant(matrixDarkVIn.rows(), 1, 1.0) };
 
   // Compute the VeryDarkPercentileLevel percentile of a stain's
-  // negative( matrixW ) column.  This a dark value due to its being the
-  // ( 100 - VeryDarkPercentileLevel ) among quantities of stain.
+  // negative(matrixW) column.  This a dark value due to its being the
+  // (100 - VeryDarkPercentileLevel) among quantities of stain.
   CalcRowVectorType logUnstainedCalcPixel = unstainedPixel.unaryExpr(CalcUnaryFunctionPointer(std::log));
   CalcMatrixType    matrixDarkV{ matrixDarkVIn };
   matrixDarkV = (firstOnes * logUnstainedCalcPixel) - matrixDarkV.unaryExpr(CalcUnaryFunctionPointer(std::log));
@@ -836,8 +835,8 @@ StructurePreservingColorNormalizationFilter<TImage>::end(
 {
   itkAssertOrThrowMacro(std::distance(matrix.data(), &matrix(matrix.rows() - 1, matrix.cols() - 1)) + 1 ==
                           matrix.size(),
-                        "Bad array stepping") return matrix.data() +
-    matrix.size();
+                        "Bad array stepping");
+  return matrix.data() + matrix.size();
 }
 
 template <typename TImage>
@@ -848,8 +847,8 @@ StructurePreservingColorNormalizationFilter<TImage>::cend(
 {
   itkAssertOrThrowMacro(std::distance(matrix.data(), &matrix(matrix.rows() - 1, matrix.cols() - 1)) + 1 ==
                           matrix.size(),
-                        "Bad array stepping") return matrix.data() +
-    matrix.size();
+                        "Bad array stepping");
+  return matrix.data() + matrix.size();
 }
 
 #else
@@ -876,8 +875,8 @@ StructurePreservingColorNormalizationFilter<TImage>::end(TMatrix & matrix)
 {
   itkAssertOrThrowMacro(std::distance(matrix.data(), &matrix(matrix.rows() - 1, matrix.cols() - 1)) + 1 ==
                           matrix.size(),
-                        "Bad array stepping") return matrix.data() +
-    matrix.size();
+                        "Bad array stepping");
+  return matrix.data() + matrix.size();
 }
 
 template <typename TImage>
@@ -887,8 +886,8 @@ StructurePreservingColorNormalizationFilter<TImage>::cend(const TMatrix & matrix
 {
   itkAssertOrThrowMacro(std::distance(matrix.data(), &matrix(matrix.rows() - 1, matrix.cols() - 1)) + 1 ==
                           matrix.size(),
-                        "Bad array stepping") return matrix.data() +
-    matrix.size();
+                        "Bad array stepping");
+  return matrix.data() + matrix.size();
 }
 #endif
 

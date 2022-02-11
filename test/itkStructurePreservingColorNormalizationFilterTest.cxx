@@ -107,8 +107,8 @@ itkStructurePreservingColorNormalizationFilterTest(int argc, char * argv[])
 
   using FilterType = itk::StructurePreservingColorNormalizationFilter<ImageType>;
   FilterType::Pointer filter = FilterType::New();
-  // filter->SetColorIndexSuppressedByHematoxylin( 0 );
-  // filter->SetColorIndexSuppressedByEosin( 1 );
+  // filter->SetColorIndexSuppressedByHematoxylin(0);
+  // filter->SetColorIndexSuppressedByEosin(1);
 
   ITK_EXERCISE_BASIC_OBJECT_METHODS(filter, StructurePreservingColorNormalizationFilter, ImageToImageFilter);
 

@@ -108,24 +108,25 @@ public:
    * Otherwise, set ColorIndexSuppressedByHematoxylin to the index in
    * the array of colors that indicates the color most suppressed by
    * hematoxylin. */
-  itkGetMacro(ColorIndexSuppressedByHematoxylin, Eigen::Index)
-    itkSetMacro(ColorIndexSuppressedByHematoxylin, Eigen::Index)
+  itkGetMacro(ColorIndexSuppressedByHematoxylin, Eigen::Index);
+  itkSetMacro(ColorIndexSuppressedByHematoxylin, Eigen::Index);
 
-    /** If the pixel type is RGB or RGBA then
-     * ColorIndexSuppressedByEosin defaults to 1, indicating green.
-     * Otherwise, set ColorIndexSuppressedByEosin to the index in the
-     * array of colors that indicates the color most suppressed by
-     * eosin. */
-    itkGetMacro(ColorIndexSuppressedByEosin, Eigen::Index) itkSetMacro(ColorIndexSuppressedByEosin, Eigen::Index)
+  /** If the pixel type is RGB or RGBA then
+   * ColorIndexSuppressedByEosin defaults to 1, indicating green.
+   * Otherwise, set ColorIndexSuppressedByEosin to the index in the
+   * array of colors that indicates the color most suppressed by
+   * eosin. */
+  itkGetMacro(ColorIndexSuppressedByEosin, Eigen::Index);
+  itkSetMacro(ColorIndexSuppressedByEosin, Eigen::Index);
 
-    // This algorithm is defined for H&E (Hematoxylin (blue) and
-    // Eosin (pink)), which is a total of 2 stains.  However, this
-    // approach could in theory work in other circumstances.  In that
-    // case it might be better to have NumberOfStains be a template
-    // parameter or a setable class member.
+  // This algorithm is defined for H&E (Hematoxylin (blue) and
+  // Eosin (pink)), which is a total of 2 stains.  However, this
+  // approach could in theory work in other circumstances.  In that
+  // case it might be better to have NumberOfStains be a template
+  // parameter or a setable class member.
 
-    /** Hematoxylin and eosin; there are two stains supported. */
-    static constexpr SizeValueType NumberOfStains{ 2 };
+  /** Hematoxylin and eosin; there are two stains supported. */
+  static constexpr SizeValueType NumberOfStains{ 2 };
   /** For Virtanen's non-negative matrix factorization algorithm. */
   static constexpr SizeValueType maxNumberOfIterations{ 0 };
   /** Select a subset of the pixels if the image has more than this */
@@ -406,7 +407,7 @@ protected:
 private:
 #ifdef ITK_USE_CONCEPT_CHECKING
   // Add concept checking such as
-  // itkConceptMacro( FloatingPointPixel, ( Concept::IsFloatingPoint< typename ImageType::PixelType > ) );
+  // itkConceptMacro(FloatingPointPixel, (Concept::IsFloatingPoint<typename ImageType::PixelType>));
 #endif
 };
 
