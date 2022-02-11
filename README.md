@@ -22,7 +22,7 @@ We have set up a demonstration of this using [Binder](www.mybinder.org) that any
 
 [![PyPI Version](https://img.shields.io/pypi/v/itk-spcn.svg)](https://pypi.python.org/pypi/itk-spcn)
 
-ITKColorNormalization and all its dependencies can be easily installed with [Python wheels](https://blog.kitware.com/itk-is-on-pypi-pip-install-itk-is-here/).  Wheels have been generated for macOS, Linux, and Windows and several versions of Python, 3.5, 3.6, 3.7, and 3.8.  If you do not want the installation to be to your current Python environment, you should first create and activate a [Python virtual environment (venv)](https://docs.python.org/3/tutorial/venv.html) to work in.  Then, run the following from the command-line:
+ITKColorNormalization and all its dependencies can be easily installed with [Python wheels](https://blog.kitware.com/itk-is-on-pypi-pip-install-itk-is-here/).  Wheels have been generated for macOS, Linux, and Windows and several versions of Python, 3.6, 3.7, 3.8, and 3.9.  If you do not want the installation to be to your current Python environment, you should first create and activate a [Python virtual environment (venv)](https://docs.python.org/3/tutorial/venv.html) to work in.  Then, run the following from the command-line:
 
 ```shell-script
 pip install itk-spcn
@@ -32,8 +32,9 @@ Launch `python`, import the itk package, and set variable names for the input im
 
 ```python
 import itk
-input_image_filename = 'path/to/image_to_be_normalized'
-reference_image_filename = 'path/to/image_to_be_used_as_color_reference'
+
+input_image_filename = "path/to/image_to_be_normalized"
+reference_image_filename = "path/to/image_to_be_used_as_color_reference"
 ```
 
 ## Usage in Python
@@ -62,7 +63,8 @@ eager_normalized_image = itk.structure_preserving_color_normalization_filter(
     input_image,
     reference_image,
     color_index_suppressed_by_hematoxylin=0,
-    color_index_suppressed_by_eosin=1)
+    color_index_suppressed_by_eosin=1,
+)
 
 itk.imwrite(eager_normalized_image, output_image_filename)
 ```
@@ -75,7 +77,9 @@ Alternatively, you can use the ITK pipeline infrastructure that waits until a ca
 input_reader = itk.ImageFileReader.New(FileName=input_image_filename)
 reference_reader = itk.ImageFileReader.New(FileName=reference_image_filename)
 
-spcn_filter = itk.StructurePreservingColorNormalizationFilter.New(Input=input_reader.GetOutput())
+spcn_filter = itk.StructurePreservingColorNormalizationFilter.New(
+    Input=input_reader.GetOutput()
+)
 spcn_filter.SetColorIndexSuppressedByHematoxylin(0)
 spcn_filter.SetColorIndexSuppressedByEosin(1)
 spcn_filter.SetInput(0, input_reader.GetOutput())
