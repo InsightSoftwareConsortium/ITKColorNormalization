@@ -153,6 +153,7 @@ StructurePreservingColorNormalizationFilter<TImage>::BeforeThreadedGenerateData(
   if (this->ImageToNMF(inIt, m_InputH, m_InputUnstainedPixel) != 0)
   {
     // we failed
+    m_Input = nullptr;
     itkAssertOrThrowMacro(
       m_Input != nullptr,
       "The image to be normalized could not be processed; does it have white, blue, and pink pixels?");
@@ -184,7 +185,7 @@ StructurePreservingColorNormalizationFilter<TImage>::BeforeThreadedGenerateData(
   m_Reference = referenceImage;
   m_ReferenceTimeStamp = referenceImage->GetTimeStamp();
 
-  if ((m_InputH * m_ReferenceH.transpose()).determinant() < CalcElementType(0))
+  if ((m_InputH * m_ReferenceH.transpose()).determinant() < Zero)
   {
     // Somehow the hematoxylin and eosin rows got swapped in one of
     // the input image or reference image.  Flip them in referenceH to get
@@ -194,7 +195,7 @@ StructurePreservingColorNormalizationFilter<TImage>::BeforeThreadedGenerateData(
     m_ReferenceH.row(0) = referenceHOriginal.row(1);
     m_ReferenceH.row(1) = referenceHOriginal.row(0);
   }
-  itkAssertOrThrowMacro((m_InputH * m_ReferenceH.transpose()).determinant() > CalcElementType(0),
+  itkAssertOrThrowMacro((m_InputH * m_ReferenceH.transpose()).determinant() > Zero,
                         "Hematoxylin and Eosin are getting mixed up; failed");
 }
 
@@ -245,8 +246,6 @@ StructurePreservingColorNormalizationFilter<TImage>::ImageToNMF(RegionConstItera
   }
 
   // Improve matrixH using Virtanen's algorithm
-  // { std::ostringstream mesg; mesg << "matrixH before VirtanenNMFEuclidean = " << std::endl << matrixH << std::endl;
-  // std::cout << mesg.str() << std::flush; }
   {
     CalcMatrixType matrixW; // Could end up large.
     this->VirtanenNMFEuclidean(matrixBrightV, matrixW, matrixH);
@@ -255,11 +254,7 @@ StructurePreservingColorNormalizationFilter<TImage>::ImageToNMF(RegionConstItera
   // Rescale each row of matrixH so that the
   // (100-VeryDarkPercentileLevel) value of each column of matrixW is
   // 1.0.
-  // { std::ostringstream mesg; mesg << "matrixH before NormalizeMatrixH = " << std::endl << matrixH << std::endl;
-  // std::cout << mesg.str() << std::flush; }
   this->NormalizeMatrixH(matrixDarkV, unstainedPixel, matrixH);
-  // { std::ostringstream mesg; mesg << "matrixH at end = " << std::endl << matrixH << std::endl; std::cout <<
-  // mesg.str() << std::flush; }
 
   return 0;
 }
@@ -289,7 +284,7 @@ StructurePreservingColorNormalizationFilter<TImage>::ImageToMatrix(RegionConstIt
       PixelType pixelValue = iter.Get();
       for (Eigen::Index color = 0; color < m_NumberOfColors; ++color)
       {
-        matrixV(numberOfRows, color) = pixelValue[color] + CalcElementType(1.0);
+        matrixV(numberOfRows, color) = pixelValue[color] + One;
       }
     }
   }
@@ -466,7 +461,7 @@ StructurePreservingColorNormalizationFilter<TImage>::SecondPassDistinguishers(
     const CalcColVectorType dotProducts{ normV * normV.row(firstPassDistinguisherIndices[distinguisher]).transpose() };
     const CalcElementType   threshold{ *std::max_element(Self::cbegin(dotProducts), Self::cend(dotProducts)) *
                                      SecondPassDistinguishersThreshold };
-    CalcRowVectorType       cumulative{ CalcRowVectorType::Constant(1, normVStart.cols(), 0.0) };
+    CalcRowVectorType       cumulative{ CalcRowVectorType::Constant(1, normVStart.cols(), Zero) };
     SizeValueType           numberOfContributions{ 0 };
     for (Eigen::Index row = 0; row < dotProducts.size(); ++row)
     {
@@ -542,8 +537,6 @@ StructurePreservingColorNormalizationFilter<TImage>::DistinguishersToNMFSeeds(co
     return 1; // we failed
   }
 
-  // { std::ostringstream mesg; mesg << "distinguishers = " << std::endl << distinguishers << std::endl; std::cout <<
-  // mesg.str() << std::flush; }
   unstainedPixel = distinguishers.row(unstainedIndex);
   const CalcRowVectorType logUnstained{ unstainedPixel.unaryExpr(CalcUnaryFunctionPointer(std::log)) };
   const CalcRowVectorType logHematoxylin{
@@ -556,7 +549,7 @@ StructurePreservingColorNormalizationFilter<TImage>::DistinguishersToNMFSeeds(co
   matrixH.row(1) = logEosin;
 
   // If somehow an element of matrixH is negative, set it to zero.
-  const auto clip = [](const CalcElementType & x) { return std::max(CalcElementType(0.0), x); };
+  const auto clip = [](const CalcElementType & x) { return std::max(Zero, x); };
   matrixH = matrixH.unaryExpr(clip);
 
   return 0;
@@ -582,12 +575,26 @@ StructurePreservingColorNormalizationFilter<TImage>::DistinguishersToColors(Calc
   // m_ColorIndexSuppressedByHematoxylin, and the index of the color
   // suppressed by eosin is indicated by
   // m_ColorIndexSuppressedByEosin.
-  const CalcColVectorType       redValues{ distinguishers.col(m_ColorIndexSuppressedByHematoxylin) };
-  const CalcElementType * const hematoxylinIt{ std::min_element(Self::cbegin(redValues), Self::cend(redValues)) };
-  hematoxylinIndex = std::distance(Self::cbegin(redValues), hematoxylinIt);
-  const CalcColVectorType       greenValues{ distinguishers.col(m_ColorIndexSuppressedByEosin) };
-  const CalcElementType * const eosinIt{ std::min_element(Self::cbegin(greenValues), Self::cend(greenValues)) };
-  eosinIndex = std::distance(Self::cbegin(greenValues), eosinIt);
+  std::vector<int> suppressedIndex;
+  std::vector<CalcRowVectorType> suppressedPixel;
+  for (int fromRow = 0; fromRow < distinguishers.rows(); ++fromRow)
+  {
+    if (fromRow == unstainedIndex)
+      continue;
+    suppressedIndex.push_back(fromRow);
+    suppressedPixel.push_back(distinguishers.row(unstainedIndex) - distinguishers.row(fromRow));
+  }
+  if (suppressedPixel[0](m_ColorIndexSuppressedByHematoxylin) * suppressedPixel[1](m_ColorIndexSuppressedByEosin) >
+      suppressedPixel[0](m_ColorIndexSuppressedByEosin) * suppressedPixel[1](m_ColorIndexSuppressedByHematoxylin))
+  {
+    hematoxylinIndex = suppressedIndex[0];
+    eosinIndex = suppressedIndex[1];
+  }
+  else
+  {
+    hematoxylinIndex = suppressedIndex[1];
+    eosinIndex = suppressedIndex[0];
+  }
 }
 
 
@@ -597,7 +604,7 @@ StructurePreservingColorNormalizationFilter<TImage>::NormalizeMatrixH(const Calc
                                                                       const CalcRowVectorType & unstainedPixel,
                                                                       CalcMatrixType &          matrixH) const
 {
-  const CalcColVectorType firstOnes{ CalcColVectorType::Constant(matrixDarkVIn.rows(), 1, 1.0) };
+  const CalcColVectorType firstOnes{ CalcColVectorType::Constant(matrixDarkVIn.rows(), 1, One) };
 
   // Compute the VeryDarkPercentileLevel percentile of a stain's
   // negative(matrixW) column.  This a dark value due to its being the
@@ -606,7 +613,7 @@ StructurePreservingColorNormalizationFilter<TImage>::NormalizeMatrixH(const Calc
   CalcMatrixType    matrixDarkV{ matrixDarkVIn };
   matrixDarkV = (firstOnes * logUnstainedCalcPixel) - matrixDarkV.unaryExpr(CalcUnaryFunctionPointer(std::log));
 
-  const auto     clip = [](const CalcElementType & x) { return std::max(CalcElementType(0.0), x); };
+  const auto     clip = [](const CalcElementType & x) { return std::max(Zero, x); };
   CalcMatrixType negativeMatrixW = -(((matrixDarkV * matrixH.transpose()).array() - lambda).unaryExpr(clip).matrix() *
                                      (matrixH * matrixH.transpose()).inverse())
                                       .unaryExpr(clip);
@@ -629,7 +636,7 @@ StructurePreservingColorNormalizationFilter<TImage>::VirtanenNMFEuclidean(const 
                                                                           CalcMatrixType &       matrixW,
                                                                           CalcMatrixType &       matrixH)
 {
-  const auto clip = [](const CalcElementType & x) { return std::max(CalcElementType(0.0), x); };
+  const auto clip = [](const CalcElementType & x) { return std::max(Zero, x); };
   matrixW = ((((matrixV * matrixH.transpose()).array() - lambda).unaryExpr(clip) + epsilon2).matrix() *
              (matrixH * matrixH.transpose()).inverse())
               .unaryExpr(clip);
@@ -664,8 +671,6 @@ StructurePreservingColorNormalizationFilter<TImage>::VirtanenNMFEuclidean(const 
       previousMatrixW = matrixW;
     }
   }
-  // { std::ostringstream mesg; mesg << "Executed = " << loopIter << " iterations of VirtanenNMFEuclidean" << std::endl;
-  // std::cout << mesg.str() << std::flush; }
 
   // Round off values in the response, so that numbers are quite small
   // are set to zero.
@@ -685,15 +690,15 @@ StructurePreservingColorNormalizationFilter<TImage>::VirtanenNMFKLDivergence(con
   // the Lasso penalty lambda for matrixW and incorporate the Lagrange
   // multipliers to make each row of matrixH have magnitude 1.0.
 
-  const auto clip = [](const CalcElementType & x) { return std::max(CalcElementType(0.0), x); };
+  const auto clip = [](const CalcElementType & x) { return std::max(Zero, x); };
   matrixW = ((((matrixV * matrixH.transpose()).array() - lambda).unaryExpr(clip) + epsilon2).matrix() *
              (matrixH * matrixH.transpose()).inverse())
               .unaryExpr(clip);
 
   // Apply Virtanen's algorithm to iteratively improve matrixW and
   // matrixH.
-  const CalcRowVectorType firstOnes{ CalcRowVectorType::Constant(1, matrixV.rows(), 1.0) };
-  const CalcColVectorType lastOnes{ CalcColVectorType::Constant(matrixV.cols(), 1, 1.0) };
+  const CalcRowVectorType firstOnes{ CalcRowVectorType::Constant(1, matrixV.rows(), One) };
+  const CalcColVectorType lastOnes{ CalcColVectorType::Constant(matrixV.cols(), 1, One) };
   CalcMatrixType          previousMatrixW{ matrixW };
   SizeValueType           loopIter{ 0 };
   for (; loopIter < maxNumberOfIterations; ++loopIter)
@@ -726,8 +731,6 @@ StructurePreservingColorNormalizationFilter<TImage>::VirtanenNMFKLDivergence(con
       previousMatrixW = matrixW;
     }
   }
-  // { std::ostringstream mesg; mesg << "Executed = " << loopIter << " iterations of VirtanenNMFKLDivergence" <<
-  // std::endl; std::cout << mesg.str() << std::flush; }
 
   // Round off values in the response, so that numbers are quite small
   // are set to zero.
@@ -770,12 +773,12 @@ StructurePreservingColorNormalizationFilter<TImage>::NMFsToImage(const CalcMatri
   // logarithm.
   CalcRowVectorType       logInputUnstained = inputUnstained.unaryExpr(CalcUnaryFunctionPointer(std::log));
   CalcRowVectorType       logReferenceUnstained = referenceUnstained.unaryExpr(CalcUnaryFunctionPointer(std::log));
-  const CalcColVectorType firstOnes{ CalcColVectorType::Constant(numberOfPixels, 1, 1.0) };
+  const CalcColVectorType firstOnes{ CalcColVectorType::Constant(numberOfPixels, 1, One) };
   matrixV = (firstOnes * logInputUnstained) - matrixV.unaryExpr(CalcUnaryFunctionPointer(std::log));
 
   // Switch from inputH to referenceH.
   {
-    const auto     clip = [](const CalcElementType & x) { return std::max(CalcElementType(0.0), x); };
+    const auto     clip = [](const CalcElementType & x) { return std::max(Zero, x); };
     CalcMatrixType matrixW = (((matrixV * inputH.transpose()).array() - lambda).unaryExpr(clip).matrix() *
                               (inputH * inputH.transpose()).inverse())
                                .unaryExpr(clip);
@@ -797,7 +800,7 @@ StructurePreservingColorNormalizationFilter<TImage>::NMFsToImage(const CalcMatri
     }
     for (Eigen::Index color = 0; color < m_NumberOfColors; ++color)
     {
-      pixelValue[color] = std::max(std::min(matrixV(pixelIndex, color) - CalcElementType(1.0), upperbound), lowerbound);
+      pixelValue[color] = std::max(std::min(matrixV(pixelIndex, color) - One, upperbound), lowerbound);
     }
     const PixelType inputPixel = inIt.Get();
     for (Eigen::Index dim = m_NumberOfColors; dim < m_NumberOfDimensions; ++dim)
@@ -906,6 +909,14 @@ constexpr typename StructurePreservingColorNormalizationFilter<TImage>::SizeValu
 template <typename TImage>
 constexpr typename StructurePreservingColorNormalizationFilter<TImage>::SizeValueType
   StructurePreservingColorNormalizationFilter<TImage>::maxNumberOfRows;
+
+template <typename TImage>
+constexpr typename StructurePreservingColorNormalizationFilter<TImage>::CalcElementType
+  StructurePreservingColorNormalizationFilter<TImage>::Zero;
+
+template <typename TImage>
+constexpr typename StructurePreservingColorNormalizationFilter<TImage>::CalcElementType
+  StructurePreservingColorNormalizationFilter<TImage>::One;
 
 template <typename TImage>
 constexpr typename StructurePreservingColorNormalizationFilter<TImage>::CalcElementType

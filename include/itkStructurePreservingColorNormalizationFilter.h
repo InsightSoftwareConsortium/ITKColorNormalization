@@ -131,6 +131,9 @@ public:
   static constexpr SizeValueType maxNumberOfIterations{ 0 };
   /** Select a subset of the pixels if the image has more than this */
   static constexpr SizeValueType maxNumberOfRows{ 100000 };
+  /** Useful constants **/
+  static constexpr CalcElementType Zero{ 0.0 };
+  static constexpr CalcElementType One{ 1.0 };
   /** Colors at least this fraction as distance as first pass distinguisher are good substitutes for it. */
   static constexpr CalcElementType SecondPassDistinguishersThreshold{ 0.90 };
   /** Colors that are at least this percentile in brightness are considered bright. */
