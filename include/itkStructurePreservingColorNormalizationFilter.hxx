@@ -274,7 +274,6 @@ StructurePreservingColorNormalizationFilter<TImage>::ImageToMatrix(RegionConstIt
 
   SizeValueType numberOfRows = std::min(numberOfPixels, maxNumberOfRows);
 
-  // To avoid zeros, every color intensity is incremented.
   CalcMatrixType matrixV{ numberOfRows, m_NumberOfColors };
   for (iter.GoToBegin(); !iter.IsAtEnd(); ++iter)
   {
@@ -284,6 +283,7 @@ StructurePreservingColorNormalizationFilter<TImage>::ImageToMatrix(RegionConstIt
       PixelType pixelValue = iter.Get();
       for (Eigen::Index color = 0; color < m_NumberOfColors; ++color)
       {
+        // To avoid std::log(0), every color intensity is incremented.
         matrixV(numberOfRows, color) = pixelValue[color] + One;
       }
     }
@@ -575,7 +575,7 @@ StructurePreservingColorNormalizationFilter<TImage>::DistinguishersToColors(Calc
   // m_ColorIndexSuppressedByHematoxylin, and the index of the color
   // suppressed by eosin is indicated by
   // m_ColorIndexSuppressedByEosin.
-  std::vector<int> suppressedIndex;
+  std::vector<int>               suppressedIndex;
   std::vector<CalcRowVectorType> suppressedPixel;
   for (int fromRow = 0; fromRow < distinguishers.rows(); ++fromRow)
   {
@@ -765,7 +765,8 @@ StructurePreservingColorNormalizationFilter<TImage>::NMFsToImage(const CalcMatri
     PixelType pixelValue = inIt.Get();
     for (Eigen::Index color = 0; color < m_NumberOfColors; ++color)
     {
-      matrixV(pixelIndex, color) = static_cast<CalcElementType>(pixelValue[color]);
+      // To avoid std::log(0), every color intensity is incremented.
+      matrixV(pixelIndex, color) = static_cast<CalcElementType>(pixelValue[color]) + One;
     }
   }
 
@@ -800,6 +801,7 @@ StructurePreservingColorNormalizationFilter<TImage>::NMFsToImage(const CalcMatri
     }
     for (Eigen::Index color = 0; color < m_NumberOfColors; ++color)
     {
+      // Every color intensity is decremented to cancel the increment that was applied prior to std::log.
       pixelValue[color] = std::max(std::min(matrixV(pixelIndex, color) - One, upperbound), lowerbound);
     }
     const PixelType inputPixel = inIt.Get();
