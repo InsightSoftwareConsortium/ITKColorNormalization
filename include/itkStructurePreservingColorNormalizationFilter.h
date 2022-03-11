@@ -164,14 +164,14 @@ protected:
   {
     using PixelType = TPixelType;
     using ValueType = typename PixelType::ValueType;
-    static constexpr SizeValueType         NumberOfDimensions = -1;
-    static constexpr SizeValueType         NumberOfColors = -1;
-    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin = -1;
-    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin = -1;
+    static constexpr SizeValueType         NumberOfDimensions = -1; // unsigned int value!
+    static constexpr SizeValueType         NumberOfColors = -1;     // unsigned int value!
+    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin{ -1 };
+    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin{ -1 };
     static PixelType
-    pixelInstance(unsigned numberOfDimensions)
+    pixelInstance(unsigned int numberOfDimensions)
     {
-      return PixelType{ numberOfDimensions };
+      return PixelType(numberOfDimensions);
     }
   };
   // For the case that the number of colors is implicitly set to 1 at
@@ -183,12 +183,12 @@ protected:
   {
     using PixelType = TPixelType;
     using ValueType = PixelType;
-    static constexpr SizeValueType         NumberOfDimensions = 1;
-    static constexpr SizeValueType         NumberOfColors = 1;
-    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin = -1;
-    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin = -1;
+    static constexpr SizeValueType         NumberOfDimensions{ 1 };
+    static constexpr SizeValueType         NumberOfColors{ 1 };
+    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin{ -1 };
+    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin{ -1 };
     static PixelType
-    pixelInstance(unsigned numberOfDimensions)
+    pixelInstance(unsigned int numberOfDimensions)
     {
       return PixelType{};
     }
@@ -199,12 +199,12 @@ protected:
   {
     using PixelType = RGBPixel<TScalar>;
     using ValueType = typename PixelType::ValueType;
-    static constexpr SizeValueType         NumberOfDimensions = 3;
-    static constexpr SizeValueType         NumberOfColors = 3;
-    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin = 0;
-    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin = 1;
+    static constexpr SizeValueType         NumberOfDimensions{ 3 };
+    static constexpr SizeValueType         NumberOfColors{ 3 };
+    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin{ 0 };
+    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin{ 1 };
     static PixelType
-    pixelInstance(unsigned numberOfDimensions)
+    pixelInstance(unsigned int numberOfDimensions)
     {
       return PixelType{};
     }
@@ -215,12 +215,12 @@ protected:
   {
     using PixelType = RGBAPixel<TScalar>;
     using ValueType = typename PixelType::ValueType;
-    static constexpr SizeValueType         NumberOfDimensions = 4;
-    static constexpr SizeValueType         NumberOfColors = 3;
-    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin = 0;
-    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin = 1;
+    static constexpr SizeValueType         NumberOfDimensions{ 4 };
+    static constexpr SizeValueType         NumberOfColors{ 3 };
+    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin{ 0 };
+    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin{ 1 };
     static PixelType
-    pixelInstance(unsigned numberOfDimensions)
+    pixelInstance(unsigned int numberOfDimensions)
     {
       return PixelType{};
     }
@@ -229,32 +229,32 @@ protected:
   // CovariantVector.  If NVectorDimension is not at least 3 we
   // will refuse to compile this case via a static_assert in the
   // constructor of StructurePreservingColorNormalizationFilter.
-  template <typename TScalar, unsigned int NVectorDimension>
+  template <typename TScalar, SizeValueType NVectorDimension>
   struct PixelHelper<Vector<TScalar, NVectorDimension>, void>
   {
     using PixelType = Vector<TScalar, NVectorDimension>;
     using ValueType = typename PixelType::ValueType;
-    static constexpr SizeValueType         NumberOfDimensions = NVectorDimension;
-    static constexpr SizeValueType         NumberOfColors = NVectorDimension;
-    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin = -1;
-    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin = -1;
+    static constexpr SizeValueType         NumberOfDimensions{ NVectorDimension };
+    static constexpr SizeValueType         NumberOfColors{ NVectorDimension };
+    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin{ -1 };
+    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin{ -1 };
     static PixelType
-    pixelInstance(unsigned numberOfDimensions)
+    pixelInstance(unsigned int numberOfDimensions)
     {
       return PixelType{};
     }
   };
-  template <typename TScalar, unsigned int NVectorDimension>
+  template <typename TScalar, SizeValueType NVectorDimension>
   struct PixelHelper<CovariantVector<TScalar, NVectorDimension>, void>
   {
     using PixelType = CovariantVector<TScalar, NVectorDimension>;
     using ValueType = typename PixelType::ValueType;
-    static constexpr SizeValueType         NumberOfDimensions = NVectorDimension;
-    static constexpr SizeValueType         NumberOfColors = NVectorDimension;
-    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin = -1;
-    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin = -1;
+    static constexpr SizeValueType         NumberOfDimensions{ NVectorDimension };
+    static constexpr SizeValueType         NumberOfColors{ NVectorDimension };
+    static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin{ -1 };
+    static constexpr typename Eigen::Index ColorIndexSuppressedByEosin{ -1 };
     static PixelType
-    pixelInstance(unsigned numberOfDimensions)
+    pixelInstance(unsigned int numberOfDimensions)
     {
       return PixelType{};
     }

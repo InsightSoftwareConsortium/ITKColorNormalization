@@ -46,7 +46,7 @@ public:
     {
       return;
     }
-    const auto * processObject = dynamic_cast<const itk::ProcessObject *>(caller);
+    const auto * processObject{ dynamic_cast<const itk::ProcessObject *>(caller) };
     if (!processObject)
     {
       return;
@@ -65,22 +65,22 @@ itkStructurePreservingColorNormalizationFilterTest(int argc, char * argv[])
     // report "Images need at least 3 colors".
 #if 0
     using TypeIF2 = itk::Image< float >;
-    auto tmpIF2 = itk::StructurePreservingColorNormalizationFilter< TypeIF2 >::New();
+    auto tmpIF2 { itk::StructurePreservingColorNormalizationFilter< TypeIF2 >::New()};
     using TypeIVD22 = itk::Image< itk::Vector< double, 2 > >;
-    auto tmpIVD22 = itk::StructurePreservingColorNormalizationFilter< TypeIVD22 >::New();
+    auto tmpIVD22 { itk::StructurePreservingColorNormalizationFilter< TypeIVD22 >::New()};
 #endif
     // These examples should compile.
 #if 1
     using TypeIRGBUC1 = itk::Image<itk::RGBPixel<unsigned char>, 1>;
-    auto tmpIRGBUC1 = itk::StructurePreservingColorNormalizationFilter<TypeIRGBUC1>::New();
+    auto tmpIRGBUC1{ itk::StructurePreservingColorNormalizationFilter<TypeIRGBUC1>::New() };
     using TypeIRGBAUS2 = itk::Image<itk::RGBAPixel<unsigned short>, 2>;
-    auto tmpIRGBAUS2 = itk::StructurePreservingColorNormalizationFilter<TypeIRGBAUS2>::New();
+    auto tmpIRGBAUS2{ itk::StructurePreservingColorNormalizationFilter<TypeIRGBAUS2>::New() };
     using TypeIVF43 = itk::Image<itk::Vector<float, 4>, 3>;
-    auto tmpIVF43 = itk::StructurePreservingColorNormalizationFilter<TypeIVF43>::New();
+    auto tmpIVF43{ itk::StructurePreservingColorNormalizationFilter<TypeIVF43>::New() };
     using TypeICVF34 = itk::Image<itk::CovariantVector<float, 3>, 4>;
-    auto tmpICVF34 = itk::StructurePreservingColorNormalizationFilter<TypeICVF34>::New();
+    auto tmpICVF34{ itk::StructurePreservingColorNormalizationFilter<TypeICVF34>::New() };
     using TypeVID4 = itk::VectorImage<double, 4>;
-    auto tmpVID4 = itk::StructurePreservingColorNormalizationFilter<TypeVID4>::New();
+    auto tmpVID4{ itk::StructurePreservingColorNormalizationFilter<TypeVID4>::New() };
 #endif
   }
 
@@ -96,50 +96,50 @@ itkStructurePreservingColorNormalizationFilterTest(int argc, char * argv[])
     return EXIT_FAILURE;
   }
 
-  const char * const input0ImageFileName = argv[1];
-  const char * const input1ImageFileName = argv[2];
-  const char * const outputImageFileName = argv[3];
+  const char * const input0ImageFileName{ argv[1] };
+  const char * const input1ImageFileName{ argv[2] };
+  const char * const outputImageFileName{ argv[3] };
 
-  constexpr unsigned int Dimension = 2;
+  constexpr unsigned int Dimension{ 2 };
   using PixelType = itk::RGBPixel<unsigned char>;
-  static constexpr unsigned int NumberOfColors = PixelType::Length;
+  static constexpr unsigned int NumberOfColors{ PixelType::Length };
   using ImageType = itk::Image<PixelType, Dimension>; // IRGBUC2
 
   using FilterType = itk::StructurePreservingColorNormalizationFilter<ImageType>;
-  FilterType::Pointer filter = FilterType::New();
+  FilterType::Pointer filter{ FilterType::New() };
   // filter->SetColorIndexSuppressedByHematoxylin(0);
   // filter->SetColorIndexSuppressedByEosin(1);
 
   ITK_EXERCISE_BASIC_OBJECT_METHODS(filter, StructurePreservingColorNormalizationFilter, ImageToImageFilter);
 
-  ShowProgress::Pointer showProgress = ShowProgress::New();
+  ShowProgress::Pointer showProgress{ ShowProgress::New() };
   filter->AddObserver(itk::ProgressEvent(), showProgress);
 
 #if 1
   using ReaderType = itk::ImageFileReader<ImageType>;
-  ReaderType::Pointer reader0 = ReaderType::New();
+  ReaderType::Pointer reader0{ ReaderType::New() };
   reader0->SetFileName(input0ImageFileName);
   filter->SetInput(0, reader0->GetOutput()); // image to be normalized using ...
 
-  ReaderType::Pointer reader1 = ReaderType::New();
+  ReaderType::Pointer reader1{ ReaderType::New() };
   reader1->SetFileName(input1ImageFileName);
   filter->SetInput(1, reader1->GetOutput()); // reference image for normalization
 
 #else
   // Create input images to avoid test dependencies.
-  const ImageType::SizeValueType testSize = 1024;
-  ImageType::SizeType            size;
+  constexpr ImageType::SizeValueType testSize{ 1024 };
+  ImageType::SizeType                size;
   size.Fill(testSize);
-  ImageType::Pointer input = ImageType::New();
-  ImageType::Pointer refer = ImageType::New();
+  ImageType::Pointer input{ ImageType::New() };
+  ImageType::Pointer refer{ ImageType::New() };
 
   // We will need some random number generators.
   using UniformGeneratorType = itk::Statistics::MersenneTwisterRandomVariateGenerator;
-  UniformGeneratorType::Pointer uniformGenerator = UniformGeneratorType::New();
+  UniformGeneratorType::Pointer uniformGenerator{ UniformGeneratorType::New() };
   uniformGenerator->Initialize(20200519);
 
   using NormalGeneratorType = itk::Statistics::NormalVariateGenerator;
-  NormalGeneratorType::Pointer normalGenerator = NormalGeneratorType::New();
+  NormalGeneratorType::Pointer normalGenerator{ NormalGeneratorType::New() };
   normalGenerator->Initialize(20200520);
 
   // Define some useful colors
@@ -207,7 +207,7 @@ itkStructurePreservingColorNormalizationFilterTest(int argc, char * argv[])
 #endif
 
   using WriterType = itk::ImageFileWriter<ImageType>;
-  WriterType::Pointer writer = WriterType::New();
+  WriterType::Pointer writer{ WriterType::New() };
   writer->SetFileName(outputImageFileName);
   writer->SetInput(filter->GetOutput());
   writer->SetUseCompression(true);
