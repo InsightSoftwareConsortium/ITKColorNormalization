@@ -164,8 +164,8 @@ protected:
   {
     using PixelType = TPixelType;
     using ValueType = typename PixelType::ValueType;
-    static constexpr SizeValueType         NumberOfDimensions = -1; // unsigned int value!
-    static constexpr SizeValueType         NumberOfColors = -1;     // unsigned int value!
+    static constexpr typename Eigen::Index NumberOfDimensions{ -1 };
+    static constexpr typename Eigen::Index NumberOfColors{ -1 };
     static constexpr typename Eigen::Index ColorIndexSuppressedByHematoxylin{ -1 };
     static constexpr typename Eigen::Index ColorIndexSuppressedByEosin{ -1 };
     static PixelType
@@ -402,10 +402,10 @@ protected:
   CalcMatrixType    m_ReferenceH;
   CalcRowVectorType m_ReferenceUnstainedPixel;
 
-  Eigen::Index m_NumberOfDimensions;
-  Eigen::Index m_NumberOfColors;
-  Eigen::Index m_ColorIndexSuppressedByHematoxylin;
-  Eigen::Index m_ColorIndexSuppressedByEosin;
+  Eigen::Index m_NumberOfDimensions{ Self::PixelHelper<PixelType>::NumberOfDimensions };
+  Eigen::Index m_NumberOfColors{ Self::PixelHelper<PixelType>::NumberOfColors };
+  Eigen::Index m_ColorIndexSuppressedByHematoxylin{ Self::PixelHelper<PixelType>::ColorIndexSuppressedByHematoxylin };
+  Eigen::Index m_ColorIndexSuppressedByEosin{ Self::PixelHelper<PixelType>::ColorIndexSuppressedByEosin };
 
 private:
 #ifdef ITK_USE_CONCEPT_CHECKING
