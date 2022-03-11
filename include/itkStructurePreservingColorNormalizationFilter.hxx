@@ -28,10 +28,6 @@ namespace itk
 
 template <typename TImage>
 StructurePreservingColorNormalizationFilter<TImage>::StructurePreservingColorNormalizationFilter()
-  : m_NumberOfDimensions(Self::PixelHelper<PixelType>::NumberOfDimensions)
-  , m_NumberOfColors(Self::PixelHelper<PixelType>::NumberOfColors)
-  , m_ColorIndexSuppressedByHematoxylin(Self::PixelHelper<PixelType>::ColorIndexSuppressedByHematoxylin)
-  , m_ColorIndexSuppressedByEosin(Self::PixelHelper<PixelType>::ColorIndexSuppressedByEosin)
 {
   // The number of colors had better be at least 3 or be unknown
   // (which is indicated with the value -1).
