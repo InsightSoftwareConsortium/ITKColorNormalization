@@ -69,8 +69,8 @@ StructurePreservingColorNormalizationFilter<TImage>::GenerateInputRequestedRegio
 
   // Get pointers to the input image (to be normalized) and reference
   // image.
-  ImageType * inputImage = const_cast<ImageType *>(this->GetInput(0));
-  ImageType * referenceImage = const_cast<ImageType *>(this->GetInput(1));
+  ImageType * inputImage{ const_cast<ImageType *>(this->GetInput(0)) };
+  ImageType * referenceImage{ const_cast<ImageType *>(this->GetInput(1)) };
 
   if (inputImage != nullptr)
   {
@@ -115,8 +115,8 @@ StructurePreservingColorNormalizationFilter<TImage>::BeforeThreadedGenerateData(
                         "StructurePreservingColorNormalizationFilter");
 
   // Find inputImage and referenceImage and make iterators for them.
-  const ImageType * const inputImage = this->GetInput(0);     // image to be normalized
-  const ImageType * const referenceImage = this->GetInput(1); // reference image
+  const ImageType * const inputImage{ this->GetInput(0) };     // image to be normalized
+  const ImageType * const referenceImage{ this->GetInput(1) }; // reference image
   // For each of the two images, make sure that it was supplied, or
   // that we have it cached already.
   itkAssertOrThrowMacro(inputImage != nullptr, "An image to be normalized needs to be supplied as input image #0");
@@ -204,7 +204,7 @@ template <typename TImage>
 void
 StructurePreservingColorNormalizationFilter<TImage>::DynamicThreadedGenerateData(const RegionType & outputRegion)
 {
-  ImageType * const outputImage = this->GetOutput();
+  ImageType * const outputImage{ this->GetOutput() };
   itkAssertOrThrowMacro(outputImage != nullptr, "An output image needs to be supplied");
   RegionIterator outIt{ outputImage, outputRegion };
 
@@ -227,8 +227,9 @@ StructurePreservingColorNormalizationFilter<TImage>::ImageToNMF(RegionConstItera
   // compact matrix, whereas in Vahadane W is a fairly compact matrix
   // and H is a very wide matrix.
 
-  const SizeType      size = iter.GetRegion().GetSize();
-  const SizeValueType numberOfPixels = std::accumulate(size.begin(), size.end(), 1, std::multiplies<SizeValueType>());
+  const SizeType      size{ iter.GetRegion().GetSize() };
+  const SizeValueType numberOfPixels{ std::accumulate(
+    size.begin(), size.end(), SizeValueType{ 1 }, std::multiplies<SizeValueType>()) };
 
   // Find distinguishers.  These are essentially the rows of matrixH.
   CalcMatrixType distinguishers;
@@ -269,10 +270,10 @@ StructurePreservingColorNormalizationFilter<TImage>::ImageToMatrix(RegionConstIt
 {
   // If the image is big, take a random subset of its pixels and put them into matrixV.
   using UniformGeneratorType = Statistics::MersenneTwisterRandomVariateGenerator;
-  UniformGeneratorType::Pointer uniformGenerator = UniformGeneratorType::New();
+  UniformGeneratorType::Pointer uniformGenerator{ UniformGeneratorType::New() };
   uniformGenerator->Initialize(20200609);
 
-  SizeValueType numberOfRows = std::min(numberOfPixels, maxNumberOfRows);
+  SizeValueType numberOfRows{ std::min(numberOfPixels, maxNumberOfRows) };
 
   CalcMatrixType matrixV{ numberOfRows, m_NumberOfColors };
   for (iter.GoToBegin(); !iter.IsAtEnd(); ++iter)
@@ -280,7 +281,7 @@ StructurePreservingColorNormalizationFilter<TImage>::ImageToMatrix(RegionConstIt
     if (uniformGenerator->GetVariate() * numberOfPixels-- < numberOfRows)
     {
       --numberOfRows;
-      PixelType pixelValue = iter.Get();
+      const PixelType pixelValue{ iter.Get() };
       for (Eigen::Index color = 0; color < m_NumberOfColors; ++color)
       {
         // To avoid std::log(0), every color intensity is incremented.
@@ -390,7 +391,7 @@ StructurePreservingColorNormalizationFilter<TImage>::FirstPassDistinguishers(
 {
   CalcMatrixType normV{ normVStart };
   numberOfDistinguishers = 0;
-  bool needToRecenterMatrix = true;
+  bool needToRecenterMatrix{ true };
   while (numberOfDistinguishers <= NumberOfStains)
   {
     // Find the next distinguishing row (pixel)
@@ -436,7 +437,7 @@ StructurePreservingColorNormalizationFilter<TImage>::SecondPassDistinguishers(
   for (int distinguisher{ 0 }; distinguisher < numberOfDistinguishers; ++distinguisher)
   {
     CalcMatrixType normV{ normVStart };
-    bool           needToRecenterMatrix = true;
+    bool           needToRecenterMatrix{ true };
     for (int otherDistinguisher{ 0 }; otherDistinguisher < numberOfDistinguishers; ++otherDistinguisher)
     {
       // skip if self
@@ -481,7 +482,7 @@ template <typename TImage>
 int
 StructurePreservingColorNormalizationFilter<TImage>::MatrixToOneDistinguisher(const CalcMatrixType & normV)
 {
-  const CalcColVectorType       lengths2 = normV.rowwise().squaredNorm();
+  const CalcColVectorType       lengths2{ normV.rowwise().squaredNorm() };
   const CalcElementType * const result{ std::max_element(Self::cbegin(lengths2), Self::cend(lengths2)) };
   if (*result > epsilon2)
   {
@@ -500,7 +501,7 @@ typename StructurePreservingColorNormalizationFilter<TImage>::CalcMatrixType
 StructurePreservingColorNormalizationFilter<TImage>::RecenterMatrix(const CalcMatrixType & normV,
                                                                     const SizeValueType    row)
 {
-  return CalcMatrixType(normV.rowwise() - normV.row(row));
+  return CalcMatrixType{ normV.rowwise() - normV.row(row) };
 }
 
 
@@ -549,7 +550,7 @@ StructurePreservingColorNormalizationFilter<TImage>::DistinguishersToNMFSeeds(co
   matrixH.row(1) = logEosin;
 
   // If somehow an element of matrixH is negative, set it to zero.
-  const auto clip = [](const CalcElementType & x) { return std::max(Zero, x); };
+  const auto clip{ [](const CalcElementType & x) { return std::max(Zero, x); } };
   matrixH = matrixH.unaryExpr(clip);
 
   return 0;
@@ -609,14 +610,14 @@ StructurePreservingColorNormalizationFilter<TImage>::NormalizeMatrixH(const Calc
   // Compute the VeryDarkPercentileLevel percentile of a stain's
   // negative(matrixW) column.  This a dark value due to its being the
   // (100 - VeryDarkPercentileLevel) among quantities of stain.
-  CalcRowVectorType logUnstainedCalcPixel = unstainedPixel.unaryExpr(CalcUnaryFunctionPointer(std::log));
+  CalcRowVectorType logUnstainedCalcPixel{ unstainedPixel.unaryExpr(CalcUnaryFunctionPointer(std::log)) };
   CalcMatrixType    matrixDarkV{ matrixDarkVIn };
   matrixDarkV = (firstOnes * logUnstainedCalcPixel) - matrixDarkV.unaryExpr(CalcUnaryFunctionPointer(std::log));
 
-  const auto     clip = [](const CalcElementType & x) { return std::max(Zero, x); };
-  CalcMatrixType negativeMatrixW = -(((matrixDarkV * matrixH.transpose()).array() - lambda).unaryExpr(clip).matrix() *
-                                     (matrixH * matrixH.transpose()).inverse())
-                                      .unaryExpr(clip);
+  const auto     clip{ [](const CalcElementType & x) { return std::max(Zero, x); } };
+  CalcMatrixType negativeMatrixW{ -(((matrixDarkV * matrixH.transpose()).array() - lambda).unaryExpr(clip).matrix() *
+                                    (matrixH * matrixH.transpose()).inverse())
+                                     .unaryExpr(clip) };
   for (Eigen::Index stain = 0; stain < NumberOfStains; ++stain)
   {
     CalcColVectorType   columnW{ negativeMatrixW.col(stain) };
@@ -636,7 +637,7 @@ StructurePreservingColorNormalizationFilter<TImage>::VirtanenNMFEuclidean(const 
                                                                           CalcMatrixType &       matrixW,
                                                                           CalcMatrixType &       matrixH)
 {
-  const auto clip = [](const CalcElementType & x) { return std::max(Zero, x); };
+  const auto clip{ [](const CalcElementType & x) { return std::max(Zero, x); } };
   matrixW = ((((matrixV * matrixH.transpose()).array() - lambda).unaryExpr(clip) + epsilon2).matrix() *
              (matrixH * matrixH.transpose()).inverse())
               .unaryExpr(clip);
@@ -657,7 +658,7 @@ StructurePreservingColorNormalizationFilter<TImage>::VirtanenNMFEuclidean(const 
                 .matrix();
     // In lieu of rigorous Lagrange multipliers, renormalize rows of
     // matrixH to have unit magnitude.
-    matrixH = CalcRowVectorType(matrixH.rowwise().squaredNorm())
+    matrixH = CalcRowVectorType{ matrixH.rowwise().squaredNorm() }
                 .unaryExpr(CalcUnaryFunctionPointer(std::sqrt))
                 .asDiagonal()
                 .inverse() *
@@ -674,7 +675,7 @@ StructurePreservingColorNormalizationFilter<TImage>::VirtanenNMFEuclidean(const 
 
   // Round off values in the response, so that numbers are quite small
   // are set to zero.
-  const CalcElementType maxW = matrixW.lpNorm<Eigen::Infinity>() * 15;
+  const CalcElementType maxW{ matrixW.lpNorm<Eigen::Infinity>() * 15 };
   matrixW = ((matrixW.array() + maxW) - maxW).matrix();
 }
 
@@ -690,7 +691,7 @@ StructurePreservingColorNormalizationFilter<TImage>::VirtanenNMFKLDivergence(con
   // the Lasso penalty lambda for matrixW and incorporate the Lagrange
   // multipliers to make each row of matrixH have magnitude 1.0.
 
-  const auto clip = [](const CalcElementType & x) { return std::max(Zero, x); };
+  const auto clip{ [](const CalcElementType & x) { return std::max(Zero, x); } };
   matrixW = ((((matrixV * matrixH.transpose()).array() - lambda).unaryExpr(clip) + epsilon2).matrix() *
              (matrixH * matrixH.transpose()).inverse())
               .unaryExpr(clip);
@@ -719,7 +720,7 @@ StructurePreservingColorNormalizationFilter<TImage>::VirtanenNMFKLDivergence(con
         .matrix();
     // In lieu of rigorous Lagrange multipliers, renormalize rows of
     // matrixH to have unit magnitude.
-    matrixH = CalcRowVectorType(matrixH.rowwise().squaredNorm())
+    matrixH = CalcRowVectorType{ matrixH.rowwise().squaredNorm() }
                 .unaryExpr(CalcUnaryFunctionPointer(std::sqrt))
                 .asDiagonal()
                 .inverse() *
@@ -734,7 +735,7 @@ StructurePreservingColorNormalizationFilter<TImage>::VirtanenNMFKLDivergence(con
 
   // Round off values in the response, so that numbers are quite small
   // are set to zero.
-  const CalcElementType maxW = matrixW.lpNorm<Eigen::Infinity>() * 15;
+  const CalcElementType maxW{ matrixW.lpNorm<Eigen::Infinity>() * 15 };
   matrixW = ((matrixW.array() + maxW) - maxW).matrix();
 }
 
@@ -748,8 +749,9 @@ StructurePreservingColorNormalizationFilter<TImage>::NMFsToImage(const CalcMatri
                                                                  RegionIterator &          outIt) const
 {
   // Read in corresponding part of the input region.
-  const SizeType      size = outIt.GetRegion().GetSize();
-  const SizeValueType numberOfPixels = std::accumulate(size.begin(), size.end(), 1, std::multiplies<SizeValueType>());
+  const SizeType      size{ outIt.GetRegion().GetSize() };
+  const SizeValueType numberOfPixels{ std::accumulate(
+    size.begin(), size.end(), SizeValueType{ 1 }, std::multiplies<SizeValueType>()) };
   CalcMatrixType      matrixV{ numberOfPixels, m_NumberOfColors };
   RegionConstIterator inIt{ m_Input, m_Input->GetRequestedRegion() };
   outIt.GoToBegin();
@@ -762,7 +764,7 @@ StructurePreservingColorNormalizationFilter<TImage>::NMFsToImage(const CalcMatri
       ++inIt;
     }
     // Copy the input pixel into our working matrix.
-    PixelType pixelValue = inIt.Get();
+    const PixelType pixelValue{ inIt.Get() };
     for (Eigen::Index color = 0; color < m_NumberOfColors; ++color)
     {
       // To avoid std::log(0), every color intensity is incremented.
@@ -772,27 +774,27 @@ StructurePreservingColorNormalizationFilter<TImage>::NMFsToImage(const CalcMatri
 
   // Convert matrixV using the inputUnstained pixel and a call to
   // logarithm.
-  CalcRowVectorType       logInputUnstained = inputUnstained.unaryExpr(CalcUnaryFunctionPointer(std::log));
-  CalcRowVectorType       logReferenceUnstained = referenceUnstained.unaryExpr(CalcUnaryFunctionPointer(std::log));
+  CalcRowVectorType       logInputUnstained{ inputUnstained.unaryExpr(CalcUnaryFunctionPointer(std::log)) };
+  CalcRowVectorType       logReferenceUnstained{ referenceUnstained.unaryExpr(CalcUnaryFunctionPointer(std::log)) };
   const CalcColVectorType firstOnes{ CalcColVectorType::Constant(numberOfPixels, 1, One) };
   matrixV = (firstOnes * logInputUnstained) - matrixV.unaryExpr(CalcUnaryFunctionPointer(std::log));
 
   // Switch from inputH to referenceH.
   {
-    const auto     clip = [](const CalcElementType & x) { return std::max(Zero, x); };
-    CalcMatrixType matrixW = (((matrixV * inputH.transpose()).array() - lambda).unaryExpr(clip).matrix() *
-                              (inputH * inputH.transpose()).inverse())
-                               .unaryExpr(clip);
+    const auto     clip{ [](const CalcElementType & x) { return std::max(Zero, x); } };
+    CalcMatrixType matrixW{ (((matrixV * inputH.transpose()).array() - lambda).unaryExpr(clip).matrix() *
+                             (inputH * inputH.transpose()).inverse())
+                              .unaryExpr(clip) };
     matrixV = matrixW * referenceH;
   }
 
   // Convert matrixV using exponentiation and the referenceUnstained pixel.
   matrixV = ((firstOnes * logReferenceUnstained) - matrixV).unaryExpr(CalcUnaryFunctionPointer(std::exp));
-  PixelType pixelValue = Self::PixelHelper<PixelType>::pixelInstance(m_NumberOfDimensions);
+  PixelType pixelValue{ Self::PixelHelper<PixelType>::pixelInstance(m_NumberOfDimensions) };
   outIt.GoToBegin();
   inIt.GoToBegin();
-  constexpr CalcElementType upperbound = std::numeric_limits<PixelValueType>::max();
-  constexpr CalcElementType lowerbound = std::numeric_limits<PixelValueType>::min();
+  constexpr CalcElementType upperbound{ std::numeric_limits<PixelValueType>::max() };
+  constexpr CalcElementType lowerbound{ std::numeric_limits<PixelValueType>::min() };
   for (SizeValueType pixelIndex{ 0 }; !outIt.IsAtEnd(); ++outIt, ++pixelIndex)
   {
     while (inIt.GetIndex() != outIt.GetIndex())
@@ -804,7 +806,7 @@ StructurePreservingColorNormalizationFilter<TImage>::NMFsToImage(const CalcMatri
       // Every color intensity is decremented to cancel the increment that was applied prior to std::log.
       pixelValue[color] = std::max(std::min(matrixV(pixelIndex, color) - One, upperbound), lowerbound);
     }
-    const PixelType inputPixel = inIt.Get();
+    const PixelType inputPixel{ inIt.Get() };
     for (Eigen::Index dim = m_NumberOfColors; dim < m_NumberOfDimensions; ++dim)
     {
       pixelValue[dim] = inputPixel[dim];
