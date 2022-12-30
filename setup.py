@@ -16,7 +16,7 @@ except ImportError:
 
 setup(
     name="itk-spcn",
-    version="0.1.8",
+    version="0.2.0",
     author="Lee Newberg",
     author_email="lee.newberg@kitware.com",
     packages=["itk"],
@@ -46,5 +46,5 @@ setup(
     license="Apache",
     keywords="ITK InsightToolkit",
     url=r"https://github.com/InsightSoftwareConsortium/ITKColorNormalization/",
-    install_requires=[r"itk>=5.2.1.post1"],
+    install_requires=[r"itk>=5.3.0"],
 )
