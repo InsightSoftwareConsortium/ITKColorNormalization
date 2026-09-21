@@ -74,7 +74,7 @@ template <typename TImage>
 class StructurePreservingColorNormalizationFilter : public ImageToImageFilter<TImage, TImage>
 {
 public:
-  ITK_DISALLOW_COPY_AND_ASSIGN(StructurePreservingColorNormalizationFilter);
+  ITK_DISALLOW_COPY_AND_MOVE(StructurePreservingColorNormalizationFilter);
 
   /** Specific class typedefs */
   using ImageType = TImage;
