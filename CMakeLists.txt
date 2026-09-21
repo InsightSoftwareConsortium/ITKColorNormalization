@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(StructurePreservingColorNormalization)
-set(CMAKE_CXX_STANDARD 14)
 
 if(NOT ITK_SOURCE_DIR)
   find_package(ITK REQUIRED)
+  if(NOT DEFINED CMAKE_CXX_STANDARD AND DEFINED ITK_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD ${ITK_CXX_STANDARD})
+  endif()
   list(APPEND CMAKE_MODULE_PATH ${ITK_CMAKE_DIR})
   include(ITKModuleExternal)
 else()
