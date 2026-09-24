@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: InsightSoftwareConsortium/ITKClangFormatLinterAction@master
+    - uses: actions/checkout@v4
+    - uses: InsightSoftwareConsortium/ITKClangFormatLinterAction@main
       with:
         error-message: 'Code is inconsistent with ITK Coding Style. Add the *action:ApplyClangFormat* PR label to correct.'
